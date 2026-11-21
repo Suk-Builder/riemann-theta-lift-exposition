@@ -1,0 +1,875 @@
+% UTF-8. Compile with XeLaTeX (twice) or Tectonic. Fonts: Noto CJK SC.
+\documentclass[UTF8,fontset=none,a4paper,11pt]{ctexart}
+\usepackage[margin=24mm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,booktabs,enumitem,fancyhdr,hyperref}
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans CJK SC}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue,pdftitle={从 theta 提升链到黎曼猜想}}
+\pagestyle{fancy}\fancyhf{}\fancyhead[L]{从 theta 提升链到黎曼猜想}\fancyfoot[C]{\thepage}
+\setlength{\headheight}{16pt}\setlength{\emergencystretch}{1.5em}
+\setlist{nosep}
+\theoremstyle{definition}
+\newtheorem{thm}{定理}
+\newtheorem{lem}[thm]{引理}
+\newtheorem{prop}[thm]{命题}
+\renewcommand{\proofname}{\normalfont\bfseries 证明}
+\newcommand{\R}{\mathbb R}\newcommand{\C}{\mathbb C}
+\newcommand{\re}{\operatorname{Re}}\newcommand{\e}{\varepsilon}
+\newcommand{\F}{\mathcal F}\newcommand{\Res}{\operatorname{Res}}
+\newcommand{\src}[3]{\href{https://github.com/leanprover-community/riemann-hypothesis/blob/23aebbb302010b292314d406aa97f7901d698634/src/#1.lean\#L#2}{#3}}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries 从 theta 提升链到黎曼猜想}\\[4pt]
+{\large 重数、平方根尺度与素数和的单边窗口}\\[3pt]
+{\small Alpöge 形式化证明的数学综述}
+\end{center}
+\noindent\textbf{摘要}\quad 本文考察 Alpöge 归档如何把 Stepanov 重数思想用于 theta 提升链，使局部整除收益累积，并通过整体高度比较导出素数和的平方根量级上界。对含模一特征且共轭封闭的有限本原 Dirichlet 特征族，本文证明，族中各函数的临界带零点都落在临界线上，当且仅当实值加权素数幂和在任意远的幂次区间上满足单边平方根界，指数允许任意小的正余量。利用每两个相邻整数之间的曲率，还可只检验整数。随后分析 Alpöge 归档怎样利用辅助扭曲、算术格和上同调长度估计为特定循环族构造所需区间，明确共同尺度与阈值的选择顺序。
+
+\noindent\textbf{关键词}\quad 黎曼猜想；Dirichlet 特征；素数幂和；Mellin 变换；局部振荡
+
+\noindent\textbf{MSC (2020)}\quad 11M26, 11M06, 11N05\qquad \textbf{中图分类号}\quad O156.4
+
+\begin{samepage}
+\begin{center}\large\bfseries From theta lift chains to the Riemann hypothesis\end{center}
+\noindent\textbf{Abstract.} We examine how iterated theta lifts implement an analogue of Stepanov multiplicity through accumulated local valuations, and why the error estimates select a chain of square-root length. For a fixed finite conjugation-stable family of primitive Dirichlet characters containing the trivial character, we consider a real, positively weighted sum of smoothed prime-power errors. The critical-line assertion for this family is equivalent to a one-sided bound with an arbitrarily small loss over the square-root exponent on arbitrarily distant power windows. The same criterion holds with observations restricted to integers. We prove these implications and explain how the formal archive announced by Alpöge supplies windows for particular cyclic families, with emphasis on uniformity in the choice of auxiliary primes and arithmetic lattices.
+
+\noindent\textbf{Keywords}\quad Riemann hypothesis, Dirichlet character, prime-power sum, Mellin transform, oscillation
+\end{samepage}
+
+从 $2$ 数到 $10$，会遇到 $2,3,5,7$ 四个素数。把终点 $10$ 换成任意大的 $x$，就可以问：实际数到的个数会和平均规律差多远？黎曼猜想给这个差距加上限制。归档采用一种平滑计数，把素数及其幂按不同权重加起来。证明要找到整段区间，使读数一直压在上界之下。只挑一个点，可能刚好挑在低谷。由第 \ref{sec:local-window} 节可知，只要有偏右零点，每个足够靠后的幂次区间都会出现一次超限，因而不能一直找到这样的整段区间。
+
+构造区间的关键是反复使用同一种变换。一次 theta 提升的输出成为下一次的输入。链末从函数取一个加权积分值，称为周期。每步留下的整除信息都可累加到这一数值上。改变辅助选择时，通过共同配对把各自的周期值联系起来，随后才能把不同素数处的整除与整体大小作比较。把误差的主要两项写成 $x/m$ 和 $m$，其中 $m$ 是提升次数。只看这两项，取 $x=100$ 时，$m=5,10,20$ 分别给出两项之和 $25,20,25$。正式估计允许幂次余量，也要控制其余误差项。平方根决定了该做多少步，整除与高度决定了实际能否拿到区间，窗口判据再把这个界送回零点问题。
+
+有两个小例子可以先算。$(T-1)^2(T-3)^2$ 在 $1$ 和 $3$ 各有两个线性因子，称为两个二重零点。四个因子已用尽四次的次数预算。再从整数 $1$ 出发，连续三次乘 $2$，得到 $8$。每一步多留一个因子 $2$，合起来就是 $2^3$。前一个例子说明重数怎样限制次数，后一个例子说明逐步整除怎样累加。真正的提升链还须控制分母，并在最终的周期上核对各步所得的估值。
+
+正文完整证明定理 \ref{th:main} 的单边窗口判据和整数版本。第 \ref{sec:theta} 节的局部计算、第 \ref{sec:ar} 节的斜率推导和第 \ref{sec:transfer} 节的小例子也给出纸面证明。为说明实际窗口的无条件供应，本文逐项陈述所用的归档结果及其接口，几何、表示论与上同调输入按所引定理使用。
+
+\section{从 Stepanov 重数到 theta 提升链}\label{sec:theta}
+设非零多项式 $P$ 的次数至多为 $D$，在 $N$ 个不同点各至少消失 $m$ 阶。对应的线性因子两两互素，故 $mN\le D$。给定次数预算，消失阶越高，能容纳的点就越少。若直接用 $P^m$，消失阶和次数同时乘以 $m$，界原样返回。Stepanov 的有限域点计数方法把多重消失作为构造辅助函数的条件，并分别控制其次数 \cite{stepanov}。Alpöge 在说明第 1 页以此引出 theta 提升，第 3 页回顾了从正交群上的行列式取得二重消失的先导构造 \cite{al}。
+
+随群的大小考察 theta 对应早已有先例。Kudla 和 Rallis 在局部对应中固定一端的表示，考察它在 Witt 塔中何时首次出现 \cite{kudlarallis}。这里的构造则逐次使用前一次提升的输出，并让提升次数随素数和的尺度增长，以控制同一周期的整除与高度。按 Alpöge 的回顾，他把玩具模型引到相应的自守情形，并将链长取 $m$ 为 $\sqrt{x}$ 量级的猜测归给 Claude \cite[第 1 页]{al}。
+
+\subsection{整除怎样累积}
+theta 提升以 theta 核对输入自守形式作积分，得到另一群上的函数。作者的构造沿酉群
+\[
+ U(V_0)\longrightarrow U(V_1)\longrightarrow\cdots\longrightarrow U(V_m)
+\]
+迭代，每步可选辅助 Hecke 特征 $\mu_j$。局部上，核的展开把源端多项式求值送到目标端的求值。同时，局部核有一个有限的平移算子展开，在指定坏位之外其系数有 $p$ 进整性，平移参数的分母可用只在坏位有素因子的整数清除。两类条件同时沿相邻层传递。见
+\src{Formalism/SharpRestriction/GlobalSchurBounds/GL3Theta}{575}{\texttt{liftTie}}
+及 \src{Formalism/ThetaLiftIndependence/Statement}{52}{\texttt{chainOpM}}。
+
+给定行 $u$、有限素位 $w$，形式化中进入最终估值的是
+\[
+ s(u,w)=\sum_{j=1}^m \bigl(g_j(w)+F_j(w)-E_j(u,w)\bigr).
+\]
+其中 $g_j$ 是保留素位上的整除收益，$F_j$ 是随后也进入高度比较的一项，$E_j$ 是局部损失。归档在被剔除的剩余特征上把 $g_j$ 置零。对满足格条件的测试向量，所取周期由代数数 $y$ 表示。若 $y\ne0$，则
+$\operatorname{ord}_w(y)\ge\lfloor e_ws(u,w)\rfloor$，$e_w$ 为归一化所用分歧指数。这里累积的是周期的局部整除深度。消失阶在 Stepanov 论证中的作用，由这项估值承担。解析零点的重数则进入第 \ref{sec:mellin} 节的留数公式。见 \src{Formalism/LocalRingCardinality/DataParams₂}{208}{\texttt{sg}}
+及 \src{Formalism/SharpRestriction/Divisibility/LocalQuadraticParts}{206}{\texttt{adm2}}。
+
+局部整除和整体高度使用同一个归一化项，该项在比较中消去。另一项代价控制来自改变辅助特征时可比较的周期，下面写出这种比较的条件。
+
+\subsection{一个局部整除步骤怎样证明}\label{sec:local-step}
+
+\paragraph{把两行约化到同一行。}
+取交换环 $A$、素数 $p$ 和 $\varpi\in A$，假设 $\varpi^2=p$。设 $M,N$ 是同阶方阵，逐项有 $N_{ba}\equiv M_{ba}^{p^e}\pmod p$。取两组系数 $u_b,u'_b$，除 $b=0$ 外都能被 $\varpi$ 整除。记
+\[
+ U_a=\sum_b u_bM_{ba},\qquad V_a=\sum_b u'_bN_{ba},\qquad q=p^e .
+\]
+在商环 $A/(\varpi)$ 中，只有首项留下，且 $p=0$。因而
+\[
+ \overline{U_a^q}=\bar u_0^{\,q}\bar N_{0a},\qquad
+ \overline{V_a}=\bar u'_0\bar N_{0a}.
+\]
+两个约化后的行都是同一行 $(\bar N_{0a})_a$ 的倍数，故每个交叉差满足
+\[
+             \varpi\mid V_cU_0^q-V_0U_c^q .
+\]
+证明所用的是商环中的两项乘积相等，允许任一首项系数为零。比如取 $A=\mathbb Z[\sqrt3]$，$\varpi=\sqrt3$，$p=q=3$，$M=N=I_2$，$u=u'=(1,\varpi)$，得到交叉差 $\varpi-\varpi^3=-2\varpi$。它恰好能被 $\varpi$ 整除一次。
+
+这是归档 \src{Formalism/SharpRestriction/GrowthBounds/CoarseMultiplicity/KeyMinorDvd}{132}{\texttt{key\_minor\_dvd}} 的数学内容。在多项式坐标中，归档把局部表达式代换成这样的交叉差，分别检查 Frobenius 同余和非首项的整性，因而证明代换后每个系数有一次整除。另一核项用相应的逆矩阵恒等式处理。两个结果合成
+\src{Formalism/SharpRestriction/GrowthBounds/CoarseMultiplicity/KeyMinorDvd}{222}{\texttt{key3Ord}}，
+进入 \src{Formalism/SharpRestriction/GrowthBounds/CoarseMultiplicity}{30}{后续多项式余项的估计}；后者还需要第四个局部表达式及其余尾项的输入。这给出了可以逐项复核的一次局部相消。全链估值另需 \src{Formalism/SharpRestriction/GrowthBounds/WeilJacquetShalikaLaw}{97}{逐层核与列格的条件}，再由该文件中的 \src{Formalism/SharpRestriction/GrowthBounds/WeilJacquetShalikaLaw}{419}{\texttt{period\_ge}} 传到周期。最后要分别处理层级素数、两个类型素数和其余素位，再合并成同一个取整后的下界，见 \src{Formalism/SharpRestriction/Divisibility/WeightDegreeSizes}{1075}{三类素位的合并}。
+
+\paragraph{把逐步下界传到周期值。}
+对归档的一个局部模型，第 $j$ 步首先给出核算子 $K_j$ 作用于整数输入的估值下界。合格的各分块若分别提供下界 $b_v$，对目标作所需的 Hecke 算子后，归档证明下界为 $\sum_v b_v-d_j$，其中 $d_j$ 是该步的分母损失。证明先选略低于 $b_v$ 的有理数，对有理下界应用局部条件，再利用赋值取整，把充分近的有理下界提升回原界。实数阈值只在跨过整数估值时才会改变所指定的理想。这个单步定理见
+\src{Formalism/SharpRestriction/GrowthBounds/MultisetValuation/RamifiedLatticeOfChainEstimates}{90}{\texttt{form\_of\_place}}。
+以整数指数为例，若线性算子把格 $\mathcal L_j$ 送入 $\varpi^{b_j}\mathcal L_{j+1}$，则每步将已提出的幂保留在外，归纳得到复合像落在 $\varpi^{B}\mathcal L_m$，其中 $B=\sum_j b_j$。归档用相应的格和投影估计给复合算子实阈值的下界，之后还要把格估值转给周期。
+
+\paragraph{为什么各分块的下界可以相加。}
+固定一个待估值的有理素数 $p$。局部坐标再分成若干块，用 $v$ 编号。这里的块下标和最终取周期估值的素位 $w$ 是两种指标。归档先把一次提升的局部核写成
+\[
+                   U_1\prod_v \mathcal K_v,\qquad
+ \mathcal K_v=\exp(-\Phi_v),\qquad
+ U_1=U_0\exp\!\left(-\left(\Phi-\sum_v\Phi_v\right)\right).
+\]
+这些是形式幂级数，整性在指定的参数代换之后判断。原核写成 $U_0\exp(-\Phi)$。先用归档的局部指数级数整性引理，证明余下的指数因子在代换后有整系数，才能把它并入 $U_1$。见 \src{Formalism/SharpRestriction/GrowthBounds/MultisetValuation/IntegralExpRename}{109}{指数余项的整性}。然后展开 $U_1$，把每个单项式按变量所属的块拆开。在各块满足单块估值假设时，对每块应用对应的局部算子并取系数，得到的每个乘积都具有估值下界 $\sum_v b_v$，其中 $b_v$ 是该块的系数下界。外层展开的系数是整数环中的元素，乘上它们不会降低估值，最后求和也不会降低共同下界。由此得到合并后的系数估计，再由上一段的单步定理扣去该步的分母损失。归档的两段证明见
+\src{Formalism/SharpRestriction/GrowthBounds/MultisetValuation/RestEntOf}{20}{核的乘积分解}和
+\src{Formalism/SharpRestriction/GrowthBounds/MultisetValuation/KernelProductForm}{51}{逐块系数估值相加}。
+
+各块的 \(b_v\) 有具体来源。无额外 Hecke 算子时，归档可以使用单块级数的直接下界，或取 \(g_B-\text{偶下标权和}\) 的下界。有合格的正指标 Hecke 算子时，可用 \(g_B\)。另一个单块界 \(g_A\) 出现在基准格估计中。令 $\mathcal O=\{1,3,5,\ldots\}$ 为正奇数集。设 \(a_s\) 为块内的行权，\(c_{s,i}\) 为沿循环坐标移动 \(i\) 步后的容量，\(\mathcal D_s\) 为归档规定要排除的指标，\(d\) 为该块的误差。\(g_A\) 的正部和写成
+\[
+ g_A=\sum_s\sum_{\substack{i\in\mathcal O\\i\notin\mathcal D_s}}
+            (a_s/p^i-c_{s,i})_+-d .
+\]
+\(g_B\) 用 \(\sum_s a_s\sum_{i\in\mathcal O}p^{-i}\) 作起点，扣除指定奇下标行上的 \(\min(a_s/p^i,c_{s,i})\) 和误差 \(d\)。几何级数之和是 \(p/(p^2-1)\)。这些式子解释了素数幂如何在核的估值阶段就进入证明。归档分别用系数范数、局部展开及权度数条件，将相应的单块估计与这三个表达式匹配。核的乘积分解合并这些单块估计。单块估计本身进一步由坐标项的估值和系数范数界给出，见
+\src{Formalism/SharpRestriction/GrowthBounds/FormalGroupSystem}{57}{\texttt{gA}、\texttt{gB} 的定义}、
+\src{Formalism/SharpRestriction/GrowthBounds/MultisetValuation/PlaceB}{27}{分块的允许下界}和
+\src{Formalism/SharpRestriction/GrowthBounds/MultisetValuation/FirstTheoremPlaceBound}{20}{三类单块估计}。
+从坐标项的估值到单块系数范数的接口在
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/EGaussK}{150}{系数范数估计}。
+
+\paragraph{从阶乘和容量推出奇次正部和。}
+下面展开上述单块估计的算术部分。归档的循环坐标是 $\mathbb Z/(2\nu)$。把 $s$ 处的一个变量记作 $Z_s$，略去行和列标签。基本级数的一部分是
+\[
+ L_s=\sum_{h\ge0}(-1)^h Z_{s-2h}^{\,p^{2h}},\qquad
+ \sum_s u_s L_s^pL_{s+1}.
+\]
+这是 \texttt{sPos} 和 \texttt{hhS} 的简写。在模 $p$ 的系数环中，取 $p$ 次幂把单项式的次数再乘一次 $p$。所以保留下来的两类坐标因子，一类消耗 \(p^{1+2h}\) 次源坐标与 \(p^{2h'}\) 次另一源坐标，另一类消耗 \(p^i\) 次源坐标，并在 \(s+i\) 处作用一次，其中 \(i\) 为正奇数。归档在有限次数范围内作这个分解，其余项分别由整性、次数或显式的因子 \(p\) 控制。两类坐标的索引见
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/CyclicPowerClassOfExpEquiv}{81}{基本形式级数}和
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/StatementE}{106}{两类次数的记账}。
+
+\emph{阶乘给出可分配的总量。}
+把幂级数 \(F\) 与多项式 \(Q\) 配对时，单项式系数乘上对应的多重阶乘。例如单变量中 \(Q=X^n\)，配对为 \(n![X^n]F\)。若将 \(X^b\) 乘进 \(F\)，可以等价地在 \(Q\) 上取展开 \(Q(X+T)\) 的 \(T^b\) 系数，再乘 \(b!\)。因为 \(b!\binom nb (n-b)!=n!\)，两个计算一致。归档将这个公式用于多方向的线性形式和行列式积。对任意整数 \(n>0\)，每个 \(p^i\) 的倍数都会给 \(n!\) 多贡献一个 \(p\) 因子，所以
+\[
+ v_p(n!)=\sum_{i\ge1}\lfloor n/p^i\rfloor
+ \ \ge\ \frac{n}{p-1}-\bigl(\lfloor\log_p n\rfloor+1\bigr).
+\]
+末尾的对数是向下取整的代价，把 \(n\) 展开成 \(p\) 进制即可核对。归档把这一估计应用到有关的三组阶乘。令 \(A=\sum_s a_s\) 为源次数之和，\(L\) 为辅助行列式的总次数，\(n_A,n_B\) 为前述两类因子的次数计数，\(n_{\rm rem}\) 为余项计数，\(d\) 为取整损失。三组阶乘来自顶层各列的次数、按奇位移分组的第二类因子计数、以及行列式展开中剩余的低层次数。顶层次数之和为 $A$。每个第二类因子占用一次低层作用，故后两组的次数之和为 $n_B+(L-n_B)=L$。余项每出现一次至少占用 $p$ 次低层次数，所以 $p n_{\rm rem}\le L$。把显式损失 \(n_A+n_B+n_{\rm rem}\) 扣掉，再写
+\[
+ \frac1{p-1}=\gamma_p+\rho_p,\qquad
+ \gamma_p=\frac{p}{p^2-1},\quad \rho_p=\frac1{p^2-1},
+\]
+由于 \(\gamma_p\ge1/p\)，\(\gamma_p L\) 覆盖 \(n_{\rm rem}\)。于是估值的下界含有
+\[
+          \gamma_p A-n_A-n_B-d+\rho_p(A+L).
+\]
+将其中的 $\rho_p(A+L)$ 用于配对的归一化。归档先控制有限次数展开中的各项，再利用非阿基米德三角不等式控制原配对。若配对为零，系数估值界直接成立。见
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/StatementAB}{23}{带阶乘的配对公式}、
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/ABArith}{103}{阶乘不等式}及
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/NormLeOfDvd}{309}{有限展开的合并}。
+
+\emph{哪些次数可以扣除。}
+对第二类因子，令 $i\in\mathcal O$，记源坐标 $s$ 到 $s+i$ 的次数计数为 $I_{s,i}$。源坐标次数给出 $p^i I_{s,i}\le a_s$；目标容量还给出 $I_{s,i}\le c_{s,i}$。相同方向在单个行列式中只能作用一次：若取出两列，这两列成比例，行列式为零；对行列式积展开方向导数，计数至多等于目标坐标可用的行列式因子数。
+
+第一类因子含一奇一偶的幂指数。选取指数较大的源坐标为 $s$，另一源坐标记为 $s'$；二者到达循环坐标中的同一位置。令 $d$ 为从 $s$ 到 $s'$ 的最小正位移。若指数为 $a>a'$，则 $d\le a-a'\le a$，且奇偶相反保证 $d\in\mathcal O$。将该因子的计数 $C_{s,d}$ 归入排除集 $\mathcal D_s$ 中位移 $d$ 的计数类。计数构造给出
+\[
+ I_{s,i}+C_{s,i}\le a_s/p^i\quad(i\in\mathcal D_s),\qquad
+ C_{s,i}=0,\quad I_{s,i}\le\min(a_s/p^i,c_{s,i})\quad(i\in\mathcal O\setminus\mathcal D_s).
+\]
+所以对未排除位移，$(a_s/p^i-c_{s,i})_+\le a_s/p^i-I_{s,i}$；排除位移的剩余下界至少为零。对所有 $i\in\mathcal O$ 求和，利用 $\sum_{i\in\mathcal O}p^{-i}=\gamma_p$，就得到上一段的 $g_A$。
+
+有限截段算例：取 $p=3,a_s=9$，比较 $i=1,3,5$，容量依次为 $2,1,0$，计数取 $I_{s,1}=2,I_{s,3}=I_{s,5}=0$。未覆盖正部和为
+\[
+ (9/3-2)_+ +(9/27-1)_+ +(9/243-0)_+=1+1/27,
+\]
+而三项几何预算减已用计数为 $9(1/3+1/27+1/243)-2=37/27$，确实覆盖该和。此例只核对有限截段不等式，不声称这些容量和计数来自实际行集。完整无限和见
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/EntryAOneParity}{177}{两类计数与容量}和
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/ABArith}{193}{逐项取正部再求和}。
+
+对 $g_B$，令 $J$ 为 Hecke 算子选中的列集，并分别记奇偶源坐标。无额外 Hecke 因子时，奇源计数受各位移容量的 $\min(a_s/p^i,c_{s,i})$ 控制；令 $A_{\rm ev}$ 为偶源行权之和，则无额外算子的界为 $g_B-A_{\rm ev}$。若有 Hecke 因子 $p^N$，指数 $N$ 的第一项是偶处未选列和奇处已选列的顶层次数之和，支付这些列的计数。第二项统计奇移位行列式命中 $J$ 的列数。\texttt{low\_pay} 将偶源已选列的剩余计数界在第二项之下。因此可用完整的 $g_B$。这是从 jetPair 范数估计到 Gauss 界的桥接；计数拆分见
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/EntryATwoAndB}{303}{带 Hecke 的剩余计数}、
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/EGaussK}{166}{jetPair 到 Gauss 界}和
+\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/StatementE}{211}{带 Hecke 因子的不等式}。
+
+具体地，设 $w$ 的剩余特征既不是层级素数，也不是两个单独处理的特征。记 $e_w>0$ 为该处分歧指数，$\widehat v_w=\operatorname{ord}_w/e_w$，$d_w$ 为配对时出现的归一化分母指数。列格估计给出下界 $S\ge s(u,w)+d_w$。取满足格条件的输入，列格的分解把周期写成 $y=a\,y_0$，其中 $a$ 来自列坐标，$y_0$ 来自参考配对。当两者均非零，
+\[
+ \widehat v_w(a)\ge S,\qquad
+ \widehat v_w(y_0)\ge-d_w
+ \quad\Longrightarrow\quad
+ \widehat v_w(y)\ge S-d_w\ge s(u,w).
+\]
+零因子的情形直接给零周期。第一项的具体预算是各步的整除收益、共同项和损失之和，再加 $d_w$。归档用 $\operatorname{gainD}\le\operatorname{gainS}$ 和同一个损失公式把该预算压到所需下界。参见
+\src{Formalism/SharpRestriction/GrowthBounds/WeilJacquetShalikaLaw}{76}{列估值预算}、
+\src{Formalism/SharpRestriction/GrowthBounds/WeilJacquetShalikaLaw}{401}{乘法与周期}和
+\src{Formalism/SharpRestriction/Divisibility/WeightDegreeSizes}{973}{普通素位的比较}。
+
+在那两个单独处理的剩余特征处，$g_j=0$。有关局部展开的格定理先给
+\[
+ s(u,w)=\sum_j(F_j-E_j)
+ \le -\sum_j v_{j,w}^{\rm norm}-C_1\mathcal E_C
+ \le \widehat v_w(y_0)
+\]
+对非零周期 $y_0$ 成立。中间项是归档由各层权度数和局部规范化计算出的界。应用它之前，要用一个 $w$ 处的单位 $\lambda$ 把输入 $\phi$ 移入已知适用的局部格。线性性给出 $y=\lambda^{-1}y_0$，所以
+$\operatorname{ord}_w(y)=\operatorname{ord}_w(y_0)$。这一步说明，改用便于计算的格之后，整除深度怎样保留到原测试向量上。层级素数则使用单独的损失估计。三类素位最后合成同一个未取整估值界。见
+\src{Formalism/SharpRestriction/Divisibility/LiftErrorLocal}{426}{局部展开的格定理}、
+\src{Formalism/SharpRestriction/Divisibility/WeightDegreeSizes}{1002}{类型素位的预算}及同文件
+\src{Formalism/SharpRestriction/Divisibility/WeightDegreeSizes}{1038}{单位变换与三支合并}。
+
+\subsection{更换辅助特征时，什么保持相容}\label{sec:seesaw}
+\paragraph{局部匹配与整体积分。}
+归档把两套 Weil 模型产生的 theta 积分放在同一个目标群 $U(W)$ 上比较。给定满足归档条件的数域扩张、Hermitian 空间与特征 $\alpha,\beta$，两侧分别在 $(V,W)$ 与 $(V',W)$ 上取 Weil 表示，所用特征参数依次为 $(\beta,\beta/\alpha)$ 与 $(\alpha,\alpha/\beta)$。这些要求合称 \texttt{IsTriple}。局部匹配给出两边到共同商空间的映射，无穷处为 $p_\infty,p'_\infty$，有限处 $v$ 为 $p_v,p'_v$。有限处的映射在所用测试函数空间上满射，和共同酉群的作用相容。在指定的有限集合以外，两侧标准测试向量的像相等且非零。若两边的测试函数是纯张量的有限和，在多项式模型中匹配的条件就是
+\[
+ \sum_i p_\infty(f_i)\otimes\bigotimes_{v\in T}p_v(\phi_{iv})
+ =
+ \sum_j p'_\infty(f'_j)\otimes\bigotimes_{v\in T}p'_v(\phi'_{jv}),
+\]
+其中 $T$ 包含指定的有限集合，$T$ 外取标准向量。一般匹配允许无穷处多项式数据逐项取极限，要求每对逼近数据都满足上式，且右侧 $\Phi'$ 和相应的逼近和始终属于归档指定的子空间 \texttt{So}。积分比较定理给出衰减及收敛条件，并给出唯一的 $c\in\C^\times$，使任意匹配对 $(\Phi,\Phi')$ 的两种 theta 积分满足
+\[
+                           I(\Phi;h)=c\,I'(\Phi';h)
+\]
+对每个共同目标变量 $h$ 成立。常数由两套模型及规范决定，第二种积分对某个容许的测试函数非零。归档还给出模型改变一步时的常数关系，以及好素位上商映射的核由群作用的差生成等条件。这里使用的是归档由 Eisenstein 级数与 Siegel--Weil 公式的结果导出的两个上游定理。见
+\src{Development/AbelianVarietyTheory/BlockTheory/DivisorBase/WeilTensorModels}{474}{匹配的实际等式}、
+\src{Development/AbelianVarietyTheory/BlockTheory/DivisorBase/WeilTensorModels}{581}{局部匹配的存在性}、
+\src{Development/AbelianVarietyTheory/BlockTheory/DivisorBase/WeilTensorModels}{585}{整体积分比较}及
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/EveryCharacterOfLiteratureOfVWin}{565}{这两个结果在最终装配中的来源}。
+等式是在复数模型中得到的。把它用于逐处整除时，还需要下文的归一化与单位条件。
+
+\paragraph{把不同辅助选择的周期联系起来。}
+先在有限集合上看 seesaw 恒等式。设 $K(x,y)$ 为核，$f,g$ 为两个有限集合上的函数，$a_x,b_y$ 是两侧实权。把配对展开成
+\[
+ \sum_y b_y\Bigl(\sum_x a_xK(x,y)f(x)\Bigr)\overline{g(y)}
+ =\sum_x a_x f(x)\overline{\Bigl(\sum_y b_y\overline{K(x,y)}g(y)\Bigr)}.
+\]
+等式只是重排双重和。它的用处是可以在任一侧展开同一个配对。实际证明要在不同群、测试函数和规范化下建立各步可用的积分身份。有限版本可在
+\src{Formalism/ThetaLiftIndependence/Statement}{186}{\texttt{LatSeeSaw}} 中核对。
+
+归档的末端恒等式给出了跨辅助选择的共同乘子。固定整个族的几何数据和层数 $m$，再选末端参数 $(y,v)$。设 $t$ 是辅助选择，$\psi$ 是该选择下合格的输入，$F$ 是合格的末端测试数据。存在一个与 $t,\psi,F$ 无关的 $a(y,v)\in\C$，使末端周期满足
+\[
+ \operatorname{perT}_t(\psi,F;y,v)=c_{P,t}\,a(y,v)\,
+       \operatorname{tail}_t(\psi,F).
+\]
+左侧记号把归档中在 $(y,v)$ 求值的输入展开省略。共同量是 $a(y,v)$，两个标有 $t$ 的因子仍可变化。这个结论需要同一套实框架和每个选择的合格格类数据。形式证明先把积分换成有限格类和，再把实处平均识别为公共标量，最后把该标量提出格类和。见
+\src{Development/AbelianVarietyTheory/Definitions/LatticeFrames/ValLastX}{205}{\texttt{PerX}}
+和
+\src{Development/AbelianVarietyTheory/Proofs/DecoratedLatticeProofs/SeeSawLastPeriodFactorizationOfClassData}{72}{格类证明}。
+
+前面的层以两步为单位传递线性关系。若若干辅助选择的末端读数乘上各自上端常数后，某个线性组合为零，则相应的底层周期乘上下端常数后，同一个线性组合也为零。归档的 \texttt{MainX} 写出了这两个线性组合。应用时，只取参考选择 $t_0$ 和另一个选择 $t$。把两项放进该关系，使用底层周期的共同实现和末端读数的坐标匹配，就能把二者放在同一个底层配对上比较。校正因子为 $c_t=s_0c_{\mathrm{top},t}/c_{\mathrm{bot},t}$，其中 $s_0$ 是一个公共非零复数。另有一个正实数控制配对所用的线性变换怎样缩放范数。这个结论保留的是归一化线性关系。见
+\src{Development/AbelianVarietyTheory/Definitions/LatticeFrames/ValLastX}{244}{\texttt{MainX}}
+及
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/RelOfLinks}{22}{两项比较}。
+
+还要保证校正因子不抹去整除性。选 $t_0$ 作参考，记 $R_t=c_{\mathrm{top},t}/c_{\mathrm{bot},t}$。上游家族定理从逐层因子的比值推出
+\[
+ (R_t/R_{t_0})^q=r,\qquad q\in\mathbb Z_{>0},\quad r\in\mathbb Q^\times,
+\]
+其中 $r$ 的非零估值只出现在该选择 $t$ 的例外素数上。两项比较把这个结论与覆盖条件一起作为输入。于是，在避开该选择例外集且有相应代数数表示的位置 $w$，有
+$q\,v_w(R_t/R_{t_0})=v_w(r)=0$。因此该处校正只乘一个局部单位。归档在两项比较中使用覆盖各位置的辅助数据。实际送下游的结论是逐位置的零估值条件和底层配对的线性关系。见
+\src{Development/AbelianVarietyTheory/Definitions/LatticeFrames/UnitRatio}{22}{\texttt{UnitRatio}}、
+\src{Development/AbelianVarietyTheory/Proofs/DecoratedLatticeProofs/SeeSawTotalConstantRatioOfFactorRatiosStatement}{13}{总常数比}
+及
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/LawsLinksOfGeoRowsCols}{187}{产生家族比值条件}。
+实际输出的两个条件见
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/FormsAtZero}{59}{底层关系与单位系数}。
+作者用取公因子解释跨选择拼接整性，普通整数格中的对应算法见第 \ref{sec:transfer} 节。
+
+\paragraph{归一化后的非零配对。}
+把上一段的关系送入底层实现时，归档另外选一组参考向量。其配对值 $b_0$ 和对应的参考读数 $p_0$ 都非零。对每个辅助选择 $t$ 与合格输入，设 $P_t$ 为相应周期，$b_t$ 为坐标匹配后的底层配对值。从两项线性关系得到
+\[
+                     c_tP_t b_0=p_0 b_t .
+\]
+因此可除以共同基点 $c_{t_0}$，取 $\zeta_t=c_t/c_{t_0}$ 和
+$a_0=p_0/(b_0c_{t_0})$，得到 $\zeta_tP_t=a_0b_t$ 及 $\zeta_{t_0}=1$。所有除法的分母均非零，且 $a_0\ne0$。对于覆盖素位的选择，$\zeta_t$ 的代数数表示在该处有零估值。这一恒等式把不同选择的周期估值送到共同的配对形式中，零估值使送过去的界无需再付一项分母损失。实际归档在矩阵坐标中还有共轭及等距变换，并把参考读数的非零性作为构造的一环。参见
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/MiStar2AtRealisation}{48}{参考配对}
+及 \src{Development/AbelianVarietyTheory/Proofs/DecoratedLatticeProofs/MiStar2OfAnchored}{15}{归一化与非零性}。下游还需用各处的局部格条件建立整体格条件，见第 \ref{sec:ar} 节。
+
+在归一化配对律、等距性及行列坐标相容等条件下，下一层转接先在参考选择的坐标基上比较两个双线性形式：一边是由周期给出的形式，另一边是由底层配对、等距变换和非零标量给出的形式。归一化配对律在匹配的坐标上给出每对基向量的等式，其中 $\zeta_{t_0}=1$。任意两个向量分别按基展开，就得到整个合格行列空间上的配对恒等式。归档再用行列接合等条件得到 Bessel 配对识别。另一路还使用本原行条件、基变换及配对消失的定理，给出整除组装所需的整组除法条件。两条推导都用到非零标量保持零集合这条事实。若 $c\ne0$，则 $c\,B(x,y)=0$ 当且仅当 $B(x,y)=0$。参见
+\src{Formalism/LocalToGlobal/SiegelLatticeTheory/FlagStabilizerTensors/AdmissibleOfTransported}{84}{按坐标基比较配对}、
+\src{Formalism/LocalToGlobal/SiegelLatticeTheory/FlagStabilizerTensors/AdmissibleOfTransported}{150}{Bessel 配对的接续}和
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/AtHDivGOfMi}{50}{除法所用消失条件}。
+
+\subsection{平方根如何选出链长}
+第 \ref{sec:ar} 节的归一化误差包含 $x/m$ 与 $m$ 的量级，略去了 $x^{O(\e)}$ 因子。前者来自将固定尺度的高度项除以含 $m$ 的主项系数，后者来自随链长增加的余项。若 $m$ 取 $x^\alpha$ 量级，这两项的指数为 $1-\alpha$ 和 $\alpha$，两者的最大值在 $\alpha=1/2$ 时最小。其余误差在这个尺度上也可控制。这个选择给出平方根量级的素数和窗口界，随后才由该界推出零点横坐标的结论。
+
+\section{从素数误差到窗口问题}
+知道平均有多少素数，与知道计数误差有多大，是素数定理和黎曼猜想之间的重要区别。显式公式把这个区别写成指数：横坐标为 $\beta$ 的零点在素数误差中带入尺度为 $x^\beta$ 的振荡。对所有大 $x$ 都有误差估计是一种很强的信息。本文问的是：如果在相距很远的若干区间里看见误差受到控制，并且只控制向上的波动，还能恢复多少零点信息？
+
+取 $\Lambda(p^j)=\log p$（$j\ge1$），在其余整数处取零。令 $r(t)=\max(t-1,0)$，
+\[
+ S_\chi(x)=\sum_{n\le x}\Lambda(n)\chi(n)r(x/n),\qquad x\ge1 .
+\]
+这里 $\chi$ 为本原 Dirichlet 特征。记模一特征为 $\mathbf1$，$\gamma$ 为 Euler 常数。定义
+\begin{align}
+ G(x)&=S_{\mathbf1}(x)-x\log x+(1+\gamma)x,\nonumber\\
+ g_\chi(x)&=S_\chi(x)+x(L'/L)(1,\chi)\quad(\chi\ne\mathbf1). \label{eq:g}
+\end{align}
+例如 $x=10$ 时，素数 $2$ 的三个幂在 $S_{\mathbf1}$ 中合计贡献 $(4+3/2+1/4)\log 2$；$3,5,7$ 分别贡献 $(7/3+1/9)\log 3,\log 5,(3/7)\log 7$。总和约为 $9.114$，减去主项后 $G(10)\simeq1.861$。单次读数很小，既可能来自真实的小振幅，也可能只因取点恰在波谷。下述判据用连续一段的上界区分这两种情形。
+
+固定有限个本原特征组成的集合 $\F$，包含 $\mathbf1$，对共轭封闭。给每个非平特征指定一个严格正的实权 $a_\chi$。写
+\[
+ H(x)=G(x)+\sum_{\substack{\chi\in\F\\\chi\ne\mathbf1}}a_\chi\,\re g_\chi(x).
+\]
+特征、导子和权在每次应用定理时固定。临界带指 $0<\re s<1$。
+\begin{thm}[单边窗口判据]\label{th:main}
+固定任意 $\delta>0$。下列三个命题等价。
+\begin{enumerate}[label=\textup{(\roman*)}]
+\item 对每个 $\chi\in\F$，$L(s,\chi)$ 的临界带零点均有实部 $1/2$。
+\item 对每个 $1/2<\theta<1$ 及每个 $B>1$，存在实数 $Y\ge B$，使每个实数 $x\in[Y,Y^{1+\delta}]$ 满足 $H(x)\le x^\theta$。
+\item 对每个这样的 $\theta,B$，存在 $Y\ge B$，使区间 $[Y,Y^{1+\delta}]$ 中的每个整数 $n$ 满足 $H(n)\le n^\theta$。
+\end{enumerate}
+\end{thm}
+取 $\F=\{\mathbf1\}$ 即得经典 RH 的表述。若取一个给定特征各幂的本原代表，则判据同时控制整个循环族；取实部使非实特征也能进入单边不等式。不同 $\theta$ 可以使用不同的区间，定理不要求知道下一个区间在哪里。
+
+Riemann \cite{riemann} 用零点描述素数分布。关于素数定理余项的大小与出现位置，可参看 Pintz \cite{pintz}；Kaczorowski 与 Pintz \cite{kp} 证明，在其非实奇点等假设下，每个充分靠后的幂次区间都有带振幅下界的变号（其式 (1.7)–(1.8)）。因而幂次窗本身在经典振荡理论中已有先例。本文处理的对象含平滑核 $r$ 和线性校正，并允许正留数的实极点。我们只需推出每个充分靠后的幂次区间出现一次正向越界，不估计变号次数。以下证明重述归档 \cite{archive} 中的\src{Development/AutomorphicArithmetic/DedekindLFunctions/LandauTheorems/ZeroFreeOfRpowWindow}{11}{局部化判据}，用 Gamma 分布写出窗口外的误差；整数形式来自核在相邻整数之间的仿射性。第 \ref{sec:ar} 节说明归档怎样为其特定正权族供应窗口。本文的定理 \ref{th:main} 在逻辑上独立于该供应结果。
+
+\section{中心化与极点}\label{sec:mellin}
+记 $\mathcal M h(s)=\int_1^\infty h(x)x^{-s-1}\,dx$。由 Euler 乘积和 $\re s>1$ 下的绝对收敛，
+\begin{equation}
+ \int_n^\infty(x/n-1)x^{-s-1}\,dx=\frac{n^{-s}}{s(s-1)},\qquad
+ \mathcal M S_\chi(s)=\frac{-L'/L(s,\chi)}{s(s-1)}. \label{eq:kernel}
+\end{equation}
+式 \eqref{eq:g} 中的校正恰好消去 $s=1$ 处的主部。对非主特征，在式 \eqref{eq:kernel} 右边加 $(L'/L)(1,\chi)/(s-1)$，于是 $1$ 处的极点消去。平凡情形须加 $-1/(s-1)^2+(1+\gamma)/(s-1)$，而 $-\zeta'/\zeta(s)=1/(s-1)-\gamma+O(s-1)$，两种阶数的主部均消去。这里用到了非主特征的 $L(1,\chi)\ne0$。
+
+设 $\rho$ 为临界带内的点，$m_\chi(\rho)$ 表示零点重数，在正则非零点取零。因 $\overline{g_\chi(x)}=g_{\bar\chi}(x)$，实部的变换是两种特征的变换的平均。取 $a_{\mathbf1}=1$，$\tilde a_\chi=(a_\chi+a_{\bar\chi})/2$。于是
+\begin{equation}
+ \Res_{s=\rho}\mathcal M H(s)
+ =-\frac{\sum_{\chi\in\F}\tilde a_\chi m_\chi(\rho)}
+          {\rho(\rho-1)}. \label{eq:res}
+\end{equation}
+这是局部分解 $L(s,\chi)=(s-\rho)^{m_\chi(\rho)}h_\chi(s)$ 的直接结果。若族中任一函数在 $\rho$ 有零点，分子严格为正；若 $\rho$ 为实数，留数也严格为正。经典的解析延拓与 $\re s=1$ 上的非零性见 \cite{dav}。故 $\mathcal M H$ 在 $\re s>1/2$ 亚纯，可能的极点均为上述简单极点。
+
+\section{把高阶导数集中到给定窗口}\label{sec:local-window}
+\begin{lem}[单边局部化]\label{lem:local}
+设 $0<\theta<1$，$g:[0,\infty)\to\R$ 可测，$|g(u)|\le C_0e^{2u}$。设 $\Phi(s)=\int_0^\infty g(u)e^{-su}\,du$（$\re s>2$）延拓为 $\re s>\theta$ 上的亚纯函数；其中极点均为简单极点，位于 $\re s\le1$，且实极点的留数严格为正。若存在常数 $C\ge0,\delta>0$ 和趋于无穷的 $U$，使 $g(u)\le Ce^{\theta u}$ 对每一整段 $[U,(1+\delta)U]$ 成立，则 $\Phi$ 在 $\re s>\theta$ 全纯。
+\end{lem}
+\begin{proof}
+取大实数 $\sigma>2$，稍后只依 $\delta$ 增大它。令 $\lambda=\sigma-2$，$k=\lfloor\lambda(1+\delta/2)U\rfloor$。使 $\lambda$ 足够大后，对所有充分大的 $U$ 有 $k\ge U$。令 $V$ 服从形状参数 $k+1$、速率 $\lambda$ 的 Gamma 分布，均值 $\mu=(k+1)/\lambda$。两端点与 $\mu$ 的比值分别趋向 $(1+\delta/2)^{-1}<1$ 与 $(1+\delta)/(1+\delta/2)>1$。对 $a<1$ 的左尾或 $a>1$ 的右尾，用 $\mathbb E e^{tV}=(1-t/\lambda)^{-k-1}$ 在 $t=\lambda(1-1/a)$ 作指数矩估计，概率均至多 $\exp[-(k+1)(a-1-\log a)]$。因此存在仅依赖 $\delta$ 的 $c>0$ 使窗外概率至多 $2e^{-c(k+1)}$。现在固定 $\sigma$ 使 $\log(\sigma/\lambda)<c$，得到
+\begin{equation}
+ \int_{u\notin[U,(1+\delta)U],\,u\ge0}
+       \frac{u^k e^{-(\sigma-2)u}}{k!}\,du\ll_\delta \sigma^{-k}. \label{eq:tail}
+\end{equation}
+
+写 $A_k(z)=(-1)^k\Phi^{(k)}(z)/k!$。在 $\re z=\sigma$，积分可逐阶微分。对一切 $\tau\in\R$，
+\begin{align}
+ |A_k(\sigma+i\tau)|+A_k(\sigma)
+ &\le\int_0^\infty (|g(u)|+g(u))\,u^ke^{-\sigma u}\,du/k!\nonumber\\
+ &\le 2C(\sigma-\theta)^{-k-1}+O_{\delta,C_0}(\sigma^{-k}).
+ \label{eq:onesided}
+\end{align}
+窗内用 $|g|+g=2\max(g,0)$，将正核在全半轴积分，得 $(\sigma-\theta)^{-k-1}$，即有第一项；窗外用 \eqref{eq:tail}。式 \eqref{eq:onesided} 对与好窗匹配的无界整数序列 $k$ 成立，无需控制负向波动。
+
+假定有极点。令 $D$ 为从 $\sigma$ 到极点集的距离与 $\sigma-\theta$ 的较小者。如果某极点的水平距离小于 $D$，在直线 $\re z=\sigma$ 上先取和它同高的点，再稍微改变高度，得到一个中心 $z$，它到唯一最近极点 $\rho$ 的距离 $d$ 小于 $D$。为说明唯一性，先取一个半径小于 $D$ 的圆盘，严格包含一个候选极点；小范围移动圆心时，只需考虑一个紧集内有限多个极点。两极点同圆的条件在这条竖线上至多排除一个高度：不同高度给出关于圆心高度的一次方程，同高时两极点均在直线左侧而水平距离不同。选 $d<r<D$，使以 $z$ 为心的闭圆盘中只有 $\rho$。扣除主部后用 Cauchy 估计，得到
+\[
+ |A_k(z)|\ge |\Res_\rho\Phi|\,d^{-k-1}-O(r^{-k}),
+ \qquad |A_k(\sigma)|=O(r^{-k}).
+\]
+这与 \eqref{eq:onesided} 矛盾，因为 $d<r<\sigma-\theta$，且 $k$ 可任意大。
+
+其余情形下每个极点的水平距离均至少为 $D$。取任一极点 $\rho_0$，则 $D\le\sigma-\re\rho_0<\sigma-\theta$。于是 $D$ 是实际距离的下确界，且以 $\sigma$ 为心、半径略大于 $D$ 的闭盘仍在亚纯域内。其极点集有限，故最近距离取得。该极点只可能是圆的最左点 $\beta=\sigma-D$，因而是唯一最近的实极点。取 $D<r<\sigma-\theta$ 隔开其余极点。对 $z=\sigma$ 扣除主部，得 $A_k(\sigma)=(\Res_\beta\Phi)D^{-k-1}+O(r^{-k})$。留数的正号再次与 \eqref{eq:onesided} 矛盾。
+\end{proof}
+
+取 $g(u)=H(e^u)$，它至多为 $O_\F(e^{2u})$，例如用 $\Lambda(n)\le\log n$ 直接估计有限和。代换 $x=e^u$ 将 $\mathcal M H$ 化为 $\Phi$。定理 \ref{th:main}(ii) 给出引理 \ref{lem:local} 中任意远的窗，式 \eqref{eq:res} 保证其实轴符号条件。取 $\theta$ 介于 $1/2$ 与任一假想偏右零点的实部之间，便排除该零点。本原函数方程把左半带零点送到共轭特征的右半带，共轭封闭性即给出 (i)。
+
+实极点的符号条件有实际内容。例如 $g(u)=-e^{\beta u}$，$\theta<\beta<1$，满足所有窗口的单边上界，其变换却在 $\beta$ 有留数为 $-1$ 的极点。另一方面 $g(u)=e^{\beta u}\cos u$ 在任意远处有负值，变换在 $\beta\pm i$ 有极点。更具体地，取 $U_j=2\pi j+\pi/2$，则在 $[U_j,U_j+\pi]$ 上函数始终非正。回到 $x=e^u$，即使在无穷多个固定倍率窗口 $[Y,e^\pi Y]$ 上处处有上界，也不足以对一般信号应用本引理。
+
+\section{反向估计与整数窗口}\label{sec:integer}
+设 $\Psi_\chi(x)=\sum_{n\le x}\Lambda(n)\chi(n)$。
+若定理 \ref{th:main}(i) 成立，经典显式公式给出
+\begin{equation}
+ \Psi_{\mathbf1}(t)=t+O(\sqrt t\,\log^2(2t)),\qquad
+ \Psi_\chi(t)=O_\chi(\sqrt t\,\log^2(2t))\quad(\chi\ne\mathbf1).
+ \label{eq:psi}
+\end{equation}
+这里只用固定导子的版本，见 Davenport \cite{dav} 的 $\psi(x,\chi)$ 显式公式。简单说明幂次的来历：取半整数 $t$，截断高度与 $t$ 同阶，显式公式的零点和按 $1/|\rho|$ 加权；每个单位高度段的零点数为 $O_\chi(\log(2+|T|))$，累加给 $O_\chi(\log^2(2t))$。假设 (i) 令各项的 $|t^\rho|$ 等于 $\sqrt t$。对任意实数 $t$，选距它至多 $1/2$ 的半整数先用此估计。两点之间至多有一个整数引起跳跃，代价为一项 $\Lambda(n)\chi(n)$，大小为 $O(\log(2t))$。
+
+为看清式 \eqref{eq:g} 中线性项的符号，交换有限和与积分得到精确等式
+\[
+ S_\chi(x)=x\int_1^x\Psi_\chi(t)t^{-2}\,dt .
+\]
+对实数 $s>1$，$-L'/L(s,\chi)=s\int_1^\infty\Psi_\chi(t)t^{-s-1}dt$。令 $s\downarrow1$，用 \eqref{eq:psi} 作控制收敛，非主特征满足 $\int_1^\infty\Psi_\chi(t)t^{-2}dt=-(L'/L)(1,\chi)$。在平凡情形写 $E(t)=\Psi_{\mathbf1}(t)-t$，先扣去 $s/(s-1)$，比较 Laurent 展开的常数项得 $\int_1^\infty E(t)t^{-2}dt=-1-\gamma$。于是
+\[
+ g_\chi(x)=-x\int_x^\infty\Psi_\chi(t)t^{-2}\,dt,\qquad
+ G(x)=-x\int_x^\infty E(t)t^{-2}\,dt .
+\]
+误差的尾积分为 $O_\F(x^{-1/2}\log^2(2x))$。故 $|H(x)|\ll_\F\sqrt x\,\log^2(2x)$，对每个 $\theta>1/2$，充分大的 $x$ 全部满足 (ii) 的界。这样便有 (i)$\Rightarrow$(ii)$\Rightarrow$(iii)。
+
+\begin{prop}[相邻整数上的误差]\label{prop:integer}
+记 $L_n(x)$ 为连接 $(n,H(n))$ 与 $(n+1,H(n+1))$ 的直线。对每个整数 $n\ge1$ 及 $x\in[n,n+1]$，
+\begin{equation}
+ 0\le H(x)-L_n(x)\le\frac{(x-n)(n+1-x)}{2n}\le\frac1{8n}. \label{eq:inter}
+\end{equation}
+\end{prop}
+\begin{proof}
+每个求和项在两个整数之间仿射，新进入的项在右端点的权为零，所以包括端点在内，可用同一个仿射式表示 $H(x)+x\log x$。故 $H''(x)=-1/x$ 在开区间上成立。凹性给出左边不等式；从 $H-L_n$ 中减去 $(x-n)(n+1-x)/(2n)$，所得函数两端为零且二阶导数为 $1/n-1/x\ge0$，给出右边不等式。
+\end{proof}
+还可直接看到整数记录保留的算术信息。令 $P(x)=H(x)+x\log x$。在整数 $n\ge2$ 处，左右斜率之差正是新进入的第 $n$ 项所造成，因此
+\[
+ P(n+1)-2P(n)+P(n-1)
+   =\frac{\Lambda(n)}{n}\left(1+\sum_{\chi\ne\mathbf1,\ \chi\in\F}
+                                  a_\chi\,\re\chi(n)\right).
+\]
+特别地，线性校正在此式中完全消去。命题 \ref{prop:integer} 所需的指数余量也有几何原因：若一个同样具有曲率 $-1/x$ 的分段函数在每个整数处恰取 $n^\theta$，它与 $x^\theta$ 之差在各开单位区间的二阶导数为 $-1/x+\theta(1-\theta)x^{\theta-2}<0$，两端为零，内部严格为正。仅由插值不能原样保留整数端点的上界。
+
+现证 (iii)$\Rightarrow$(i)。给定 $1/2<\theta'<1$，取 $1/2<\theta<\theta'$ 和 $0<\delta'<\delta$。对 (iii) 给的 $Y$ 取 $Z=\lceil Y\rceil$。充分大的 $Y$ 满足 $Z^{1+\delta'}+1\le Y^{1+\delta}$。区间 $[Z,Z^{1+\delta'}]$ 的每个点均被原窗中的相邻整数夹住。夹住 $x$ 的整数均满足 $H(n)\le n^\theta$。取 $Z$ 充分大，在整个短窗内，幂次差 $x^{\theta'}-x^\theta$ 都盖过 $1/(8\lfloor x\rfloor)$。由 $x^\theta$ 的凹性及 \eqref{eq:inter} 得
+\[
+ H(x)\le x^\theta+\frac1{8\lfloor x\rfloor}\le x^{\theta'} .
+\]
+将引理 \ref{lem:local} 用于 $\delta'$ 即可。先缩小幂次窗再取整，避免了原窗终点之外的那个整数没有上界的问题。至此定理 \ref{th:main} 三个方向均已证明。此结论将每一给定窗口的检验归约到有限个整数，任意远良窗的存在仍是独立的数学条件。
+
+\section{归档怎样构造一个共同窗口}\label{sec:ar}
+以下专门取 $\F$ 为本原目标 $\psi$ 的循环幂所诱导的本原特征族，$o$ 为 $\psi$ 的阶。归档的平凡分量系数为 $1$，其余为 $1/(3o+1)$。任意指定的正权族都可用定理 \ref{th:main} 检验，但下述构造提供的是这些特定的权。为区分引文和推论，我们分别陈述所用的上游结果以及如何合并它们。原始材料为 Alpöge 的说明与公开源码 \cite{al,archive}。
+
+\subsection{整段控制三类辅助扭曲}
+固定 $\psi$ 的导子 $M$。对 $0<\e<1/52$ 及 $J\ge1$，选素数定理 \textup{(\src{Development/AutomorphicArithmetic/MeanSquareBounds/pairEx}{112}{pairEx})} 给出 $Y_1(M,\e,J)$。对每个 $Y_0\ge Y_1$，存在素数 $q,d$，$\gcd(M,qd)=1$，满足
+\begin{gather}
+ q\equiv3\bmod8,\quad d\equiv7\bmod16,\quad q\mid d+1,\qquad z=Y_0^{\e/5},\nonumber\\
+ z/2<\log q\le z,\qquad z(\log Y_0)^2/2<\log d\le z(\log Y_0)^2. \label{eq:pairs}
+\end{gather}
+不超过 $z$ 的奇素数均整除 $d+1$。若 $\xi$ 为任一模 $M$ 特征，则对
+$\xi\chi_{-q}^i\chi_{-d}^j$ 的本原代表 $\chi$，$(i,j)\in\{(1,0),(0,1),(1,1)\}$，同一对 $q,d$ 保证
+\begin{equation}
+ |g_\chi(y)|\le y^{1/2+\e/2},\qquad |(L'/L)(1,\chi)|\le4\log y
+ \quad(Y_0\le y\le Y_0^J).\label{eq:aux}
+\end{equation}
+对导子整除 $8M$ 的实底特征还有高度有界的无零矩形条件，精确高度见
+\src{Development/AutomorphicArithmetic/CharacterBoxes/PairGood}{12}{PairGood}。
+估计 \eqref{eq:aux} 的选取范围排除了 $(0,0)$；保留下来的原目标须另行提取。该定理先用 Jacobi 特征均方估计、异常零点计数和等差数列中的素数估计控制坏 $q$ 的比例，再对每个合格的 $q$ 控制相应候选集中的坏 $d$。两次排除后各剩正比例，先固定 $q$ 再固定 $d$ 即得存在性。这一段引用的是归档的两级平均定理；由对每个 $y$ 的单独存在性不能交换量词推出 \eqref{eq:aux}。
+
+\subsection{上同调长度与尺度换元}
+第二项输入是归档的总长度窗口定理
+\textup{(\src{Development/AutomorphicArithmetic/CharacterBoxes/ExistsPageN}{44}{VWinAt})}。
+对每个上述 $\e$，先固定函数 $e(t)\in\mathbb N$，使
+$t^{2+8\e}\le2^{e(t)}\le2t^{2+8\e}$（$t\ge1$）。存在 $J\ge1,X_0$，使每个 $X\ge X_0$、每一对在 $Y_0=X^{1/J}$ 满足规定条件的 $q,d$ 都有一个 $W$，满足 $Y_0\le W,\ W^2\le X$。对所有 $t\in[W,W^2]$、所有按 $\psi,e(t),q,d$ 构造的合格数域 $E$ 和所有有限素数集 $S$，有
+\begin{equation}
+ \sum_{\ell\in S}\log\ell\sum_{1\le h<\lfloor t^{401}\rfloor}
+       \lambda_\ell(E,h)\le \exp(t^\e/2).\label{eq:length}
+\end{equation}
+这里 $\lambda_\ell$ 是归档所用有限长度，来自系数 $\mathbb Q_\ell/\mathbb Z_\ell(-h)$ 的上同调局部条件，在 $\ell$ 上方限制到分解群为零，其他有限处限制到惯性群为零。具体长度由选定的局部数据给定，估计对允许的选择统一。长度窗口的取得分为选区间和估总长度两步。
+
+\paragraph{为什么能同时避开异常扭曲指数。}
+在归档的选窗定理中，两类上游长度估计分别给出有限异常集。固定初始上界和辅助素数后，素数 $2$ 的异常集至多有 $R_0$ 个整数，第二类对每个指定奇素数 $\ell$ 至多有 $R_\ell$ 个。取并集，大小至多为 $R=R_0+\sum_\ell R_\ell$。取 $\eta=\e/(2C_K)$，其中 $C_K\ge1$ 为归档选定的秩预算常数。需要对每个异常整数 $h$ 同时满足
+\[
+                   h\le t^{C_t}\quad\Longrightarrow\quad h\le t^\eta,
+                   \qquad C_t=401.
+\]
+这一条件控制的是落在当前截断范围内的所有异常整数。小于等于 $1$ 的指标自动合格。对 $h>1$，令 $a=(\log h)/C_t$、$B=C_t/\eta\ge1$。不合格的 $t$ 恰对应 $\log t\in[a,Ba)$。见
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/LayeredIsomorphisms/SecondBound}{46}{异常集合的条件}
+及 \src{Development/AutomorphicArithmetic/AutomorphicVarieties/LayeredIsomorphisms/ThmBabOf}{11}{合并两类异常集合}。
+
+以下在实区间 $(0,U]$ 内避开至多 $R$ 个禁区，其中 $U=\log X$。若有起点 $a\in(U/(2B),U]$，便把工作区间缩到 $(0,U/(2B)]$ 并移除该禁区，缩后的区间完全在 $a$ 左边。递归过程中，已移除的禁区始终与工作区间不相交。若没有这样的起点，则每个尚存禁区要么在 $U$ 右边开始，要么满足 $Ba\le U/2$，右端点本身不在禁区内。所以此时整个 $[U/2,U]$ 可取。至多缩 $R$ 次，所得 $[u,2u]$ 满足
+\[
+                \frac{\log X}{2(2B)^R}\le u,\qquad 2u\le\log X .
+\]
+取 $Y=\exp u$，得到区间 $[Y,Y^2]$。归档使用略宽松的 $Y\ge X^{1/J}$，其中 $J=4(2B)^R$。这个递归及换元可在
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/LayeredIsomorphisms/Window1}{7}{对数区间的归纳}
+与 \src{Development/AutomorphicArithmetic/AutomorphicVarieties/LayeredIsomorphisms/Window}{7}{取指数后的整窗}核对。
+
+\paragraph{怎样把各类长度放进同一个上界。}
+在这样选出的区间里，归档分别估计素数 $2$ 处的长度，以及奇素数处复共轭作用的正、负两部分。奇素数处的总长度等于这两部分之和。因此若素数 $2$ 处未乘 $\log 2$ 的上界为 $B_2$，其余两部分的加权上界为 $B_+,B_-$，则任意有限素数集的总长度至多为 $B_2\log 2+B_++B_-$。这里也要求每一部分在相应截断范围内有限。见
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/LengthEqAddEigen}{127}{三部分的合并}。
+
+具体令 $H=\lfloor t^{401}\rfloor$，$N_E$ 为数域 $E$ 的导子，$v=N_EH$。在同一个 $[Y,Y^2]$ 中，对所有合格的 $E$，可分别取
+\begin{align*}
+ B_2&=\exp(t^{4\e/5}),\
+ B_+&=v^{C_+}+C_+\exp(t^{4\e/5}),\
+ B_-&\le K_-\exp(8t^{\e/4}).
+\end{align*}
+前两项来自同一个选窗定理及其奇素数正部分估计。后一项是适用于该区间各点的负部分上界。正部分的证明先对指定的奇素数集使用局部分层界，再与其补集的多项式估计合并。见
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/PrimeSetBoundDataOfPrimitiveChar}{32}{素数 $2$ 处的输入}、
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/HeightAndVanishing/LayerLe}{27}{指定素数与补集的长度界}、
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/PrimeSetBoundDataOfPrimitiveChar}{75}{正部分界}和
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/CMFieldExponentialBounds/minusle}{6}{负部分界}。
+
+由 $N_E\le 2^{e(t)+2}Mqd$、$H\le t^{401}$ 及该构造给出的 $\log(qd)\le t^{\e/4}$，充分大的 $t$ 满足 $\log v\le 2t^{\e/4}$。特别是 $v^{C_+}\le\exp(2|C_+|t^{\e/4})$。对固定的 $\e,C_+,K_-$，各项指数中的 $t^{4\e/5}$ 和 $t^{\e/4}$ 均为 $o(t^\e)$。因此增大一次阈值，三部分的总和即不超过 $\exp(t^\e/2)$，得到 \eqref{eq:length}。有限异常集、局部分层与补集计数的上游估计用到秩界和局部及整体对偶。导子估计与最后一步见
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/CMFieldExponentialBounds/LogConductorMulHeightLeOfPageN}{6}{导子与截断}及
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/CMFieldExponentialBounds/AdmissibleOfPageN}{41}{总长度窗口定理的装配}。
+
+现在才把两项输入相交。用第二项给出的 $J$ 代入第一项，在 $Y_0=X^{1/J}$ 选择 $q,d$，再为这同一对素数取得 $W$。宿主的群阶带有固定因子 $c\ge1$，取 $\kappa^{2+8\e}=c$，$Z=\kappa W$。增大 $X$ 保证 $W\ge\max(\kappa^3,\kappa^{400})$。对 $Z\le x\le Z^{3/2}$，有
+\[
+ x\le W^2\le X,\qquad W\le x/\kappa\le W^2,\qquad
+ x^{400}\le(x/\kappa)^{401}.
+\]
+在 $x$ 用 \eqref{eq:aux}，在 $t=x/\kappa$ 用 \eqref{eq:length}；此时 $c2^{e(t)}$ 在 $x^{2+8\e}$ 与 $2x^{2+8\e}$ 之间。局部预算截短到 $x^{400}$ 后依然成立。因 $Z\ge X^{1/J}$，这样的起点任意大。这给出每一点所需宿主的供应；$e(t)$ 与数域可随点改变，而辅助素数对在这一窗口内固定。见 \src{Development/AutomorphicArithmetic/CharacterBoxes/WinPairs}{34}{WinPairs}。
+
+\subsection{怎样在同一族上使用局部与整体估计}
+\subsubsection{上同调长度怎样进入逐层预算}
+在选定的一族中写 $b=\exp(x^\e)$，用 $t_D=D.R.t$ 表示宿主数据 $D$ 所需的扭曲次数截断。归档的\src{Development/AutomorphicArithmetic/CharacterBoxes/EventuallyRankLeRpowOfLtOneDivFiftytwo}{7}{统一秩界}给出 $t_D\le\lfloor x^{400}\rfloor$。因而可以缩短上一节的截断，为每个合格宿主取得 \texttt{VVle}$(E,t_D,\sqrt b)$。具体说，对每个素数 $\ell$、每个 $1\le h<t_D$，所选局部条件下的长度 $\lambda_\ell(E,h)$ 有限。记
+\[
+ q_\ell=(\log\ell)\sum_{1\le h<t_D}\lambda_\ell(E,h).
+\]
+任意有限组素数的 $q_\ell$ 之和至多为 $\sqrt b$，而每项均非负。按素数顺序的部分和单调且有上界，因此全和 $Q_{\rm coh}=\sum_\ell q_\ell$ 收敛并仍不超过 $\sqrt b$。归档的 \texttt{vvRecord} 还核对了长度模型与宿主数据中同名量一致，见
+\src{Development/AutomorphicArithmetic/CharacterBoxes/ExistsPageN}{12}{有限长度条件}
+及 \src{Development/AutomorphicArithmetic/CharacterBoxes/DivinNOfHypV}{17}{从有限和到宿主数据的全和}。
+
+固定提升层 $j$。记 $A_j=\operatorname{etaSum}(L,j)$，$r_j=d_{Z,0}(L,j)$ 为归档的 \texttt{dZ0} 系数。将归档的 \texttt{lwP}、\texttt{ramIdx} 和 \texttt{etaJ} 分别记为 $c_w,e_w,\eta_j(w)$。\texttt{LinkN} 使用的估计为
+\begin{align*}
+ A_j&=\sum_{w\in S_*} c_w e_w\eta_j(w),\\
+ A_j&\le r_j\bigl\{C(fmbx^{2\e}+(\log x)^2N_c)+Q_{\rm coh}\bigr\}.
+\end{align*}
+其中 $S_*$ 仅含支撑内扭曲有别于基准扭曲的素位，$f,m$ 是宿主的正整数参数，$N_c\ge0$ 是附加秩预算。\texttt{vvRecord} 同时给出调用 \texttt{LinkN} 所需的长度有限性和可求和性。上同调长度在这里以加项 $Q_{\rm coh}$ 进入，乘上小层秩才成为该层的误差。
+
+令 $B_0=fmbx^\e$。充分大的 $x$ 满足 $(\log x)^2\le x^\e$，且 $\sqrt b\le b\le B_0$。再由归档的 \texttt{SmallLevelRankEq} 取 $r_j=D_0$，直接得到统一的不等式
+\[
+                   A_j\le D_0(|C|+1)x^\e(B_0+N_c).
+\]
+这里 $D_0$ 是宿主标定的小层秩。阈值扩大一次即可对同一族的所有合法索引、所有提升层同时使用。这就是进入行格比较的 \texttt{DIVinN}，见
+\src{Formalism/SharpRestriction/GlobalTheoremInputs}{35}{局部加权和与小层秩条件}
+及 \src{Development/AutomorphicArithmetic/CharacterBoxes/DivinNOfHypV}{76}{归一化不等式}。
+
+\subsubsection{局部整除、格指数与斜率}
+先看整数上的原型。令 $M$ 是秩 $r$ 的欧氏格，$\mu(M)=-r^{-1}\log\operatorname{covol}(M)$。若 $M\subset N$ 且指数 $[N:M]=q$，则
+\[
+ \operatorname{covol}(M)=q\operatorname{covol}(N),\qquad
+ \mu(N)-\mu(M)=r^{-1}\log q.
+\]
+例如 $M=\mathbb Z^2$，$N=\tfrac18\mathbb Z\oplus\mathbb Z$，则斜率提高 $\tfrac12\log 8$。若一个整数线性映射把第一基向量送进 $8\mathbb Z$，它就把这个 $N$ 送进 $\mathbb Z$。这样，一条整除条件允许扩大映射的定义格，并把整除量变为定义格的斜率增量。指数只给出总增量。将 $N$ 换成 $\mathbb Z\oplus\tfrac18\mathbb Z$ 时，指数相同，但第一坐标的整除不能保证第二个格可用。例如映射 $(x,y)\mapsto 8x+y$ 在此只说明第一基向量的像被 $8$ 整除，在该较大格上第二基向量的像为 $1/8$。应用中须核对所扩张的方向。
+
+归档在每处先算 $k_w=\lfloor e_ws(u,w)\rfloor$，再用分式理想
+\[
+ I_u=\prod_{w\in\mathrm{supp}}\mathcal P_w^{-k_w}
+\]
+调整输入格。其中 $\mathcal P_w$ 是该处的素理想。若局部周期的值在 $\mathcal P_w^{k_w}$，就可用 $\mathcal P_w^{-k_w}$ 扩张该处输入而仍得到整数值。给定同一个数域向量，验证它的所有局部格条件可以恢复整体格条件。证明是取理想 $\{a\in\mathcal O_K:ay\in M\}$。若它是个真理想，取一个包含它的极大理想，该处就不存在能清除障碍的局部单位。取整放在求和之后保留各步的小数贡献，例如 $\lfloor 3/5+3/5\rfloor=1$，逐项取整则为零。见
+\src{Formalism/LocalRingCardinality/DataDIVDefs}{13}{分式理想与格的定义}、
+\src{Formalism/SharpRestriction/GlobalSchurBounds/FiniteModelOfAdmissibleTransports}{2217}{局部格成员判据}。
+
+\subsubsection{拼接各处配对，得到一个整体映射}\label{sec:glue}
+设 $K$ 为共同数域，$N$ 为原输入格，$N'$ 为按 $I_u$ 调整后的格。令 $B(x,y)$ 为共同的有理双线性配对，$R$ 为目标行格。每个有限素位 $w$ 有测试向量格 $M_w$、行坐标映射 $J_w$，以及由 theta 链给出的周期 $P_w(x,F)$。归档所用的恒等式与格条件是
+\[
+ P_w(x,F)=\zeta_w B(x,J_wF),\qquad
+ \operatorname{ord}_w(\zeta_w)=0,\qquad
+ R_w=(J_wM_w)_w .
+\]
+右下角 $w$ 表示在该处局部化。$J_w$ 合写了归档中的矩阵复合 $\iota_w\pi_w$。最后一个等式要求测试向量像格的局部化恰好等于整个目标行格。行格先用局部交集构造。各处给定的格都张成所在向量空间，且其局部化除有限多个位置外与参考格相同。归档据此证明交集也是一个张成整个空间的格，局部化恢复各自指定的格。见
+\src{Formalism/QuotientMetricDivisors/LatticeGlueUnique}{15}{格拼接的条件}、
+\src{Formalism/QuotientMetricDivisors/HermitianTwistDivisors/SecondStepGluing}{256}{拼接定理}、
+\src{Formalism/LocalToGlobal/IndefiniteForms/PairingConditionOfInverseMatrixIdentity}{393}{实际周期与格的转接}。
+
+现在设 $x\in N'$，$y\in R$。由格的局部移位，可找 $w$ 处单位 $t$、局部生成元 $a$ 以及 $x_0\in N$，使 $tx=ax_0$，$\operatorname{ord}_w(a)=-k_w$。由 $R_w=(J_wM_w)_w$，同样有单位 $t'$ 和 $F\in M_w$ 使 $t'y=J_wF$。第 \ref{sec:local-step} 节的估值输入给出 $P_w(x_0,F)=0$ 或 $\operatorname{ord}_w(P_w(x_0,F))\ge k_w$。双线性给出
+\[
+             tt'\zeta_w B(x,y)=aP_w(x_0,F).
+\]
+若右侧不为零，其估值至少是 $-k_w+k_w=0$，左侧三个系数都是单位。故 $B(x,y)$ 在该处为整数。对所有素位成立，便有 $B(x,y)\in\mathcal O_K$。因此
+\[
+                 B(N',R)\subseteq\mathcal O_K,
+       \qquad B(N',-)\subseteq R^\vee .
+\]
+这里 $R^\vee$ 指在 $R$ 上取整数值的线性函数组成的格。归档分别证明输入移位的估值公式和目标行的局部配对，再合并为上述结论。见
+\src{Formalism/QuotientMetricDivisors/HermitianTwistDivisors/TwistedLatticeNaturality}{684}{移位后的估值}、
+\src{Formalism/QuotientMetricDivisors/HermitianTwistDivisors/DivIntoDual}{49}{全局整数值}。
+在源与目标的坐标等价下，归档把这条包含送入实际用于斜率比较的映射。对输入格的坐标识别及映射转移见
+\src{Formalism/LocalToGlobal/Divisibility/DivisibilityConstruction/ShiftOfColTie}{53}{移位格的坐标识别}和
+\src{Formalism/LocalToGlobal/Divisibility/RecBridge}{33}{整体映射}。
+
+例如在 $K=\mathbb Q$ 上取 $N=R=\mathbb Z$，$B(x,y)=72xy$，在 $2$ 和 $3$ 处分别取下界 $3$ 和 $2$。允许输入的局部分母分别增加 $2^3$ 和 $3^2$，拼成整体格 $\tfrac1{72}\mathbb Z$。取 $x=1/72$、$y=1$ 就达到整数值 $1$。若取 $P_3=3B$，周期在 $3$ 处比 $B$ 多一阶整除。若误将系数 $3$ 当成单位，就会错误允许分母增加至 $3^3$，取 $x=1/216$ 时得到 $B(x,1)=1/3$。这个例子显示单位条件为何必须逐处成立。
+
+归档中的整除行条件和上同调数值界在这里汇合。由配对消失推出的 \texttt{DivRows3G} 提供有理提升与行列相容条件，经 \texttt{wire\_sel} 进入格比较所需的组装。另一路的 \texttt{DIVinN} 来自上同调长度、局部维数等估计，提供数值误差界。接合定理把两类条件用于同一方案，再把整数值包含、映射高度和主项预算一起转成后续的斜率比较输入。见
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/WireSel}{20}{整除行的转接}、
+\src{Development/AutomorphicArithmetic/CharacterBoxes/DivinNOfHypV}{117}{数值界}和
+\src{Formalism/LocalToGlobal/Divisibility/ConstantGeTwentyEight}{185}{整性、范数与斜率的联合结论}。
+
+\subsubsection{在同一行上消去共同项}
+下面写出归档在行 $u_0$、词 $u$ 上合并的两条不等式。记 $\mu_M,\mu_N$ 为源格和调整格的平均斜率，$\mu_C$ 为目标对偶格的平均斜率，$h$ 为映射的高度上界。$G_a,F_o,E_e$ 分别累计净整除收益、共同项及估值损失。令 $A=\sum_t a_t$ 为非负权的总和，$T$ 为该词的正参数。按原证明的记号，$S_{\mathrm{div}}$ 为高度一侧与 $u$ 无关的主量，$E_{\mathrm{div}}$ 与 $L_o$ 是两侧的误差。完整的条件可由
+\src{Formalism/RankGapBounds/MeanBoundSecondForm}{118}{\texttt{DIV}}
+和
+\src{Formalism/SizeWindowBrackets/QuotientSlopeBoundsWith}{19}{\texttt{QuotientSlopeBoundsWith}}
+核对。记号略去相同的行与词下标。
+\begin{align}
+ \mu_N&\ge\mu_M+G_a+F_o-E_e-L_o,\label{eq:slope-lo}\\
+ \mu_C+h-F_o&\le S_{\mathrm{div}}-A\log T+E_{\mathrm{div}}.\label{eq:slope-hi}
+\end{align}
+把第二行改写成 $-h$ 的下界，与第一行相加，得到
+\begin{equation}\label{eq:slope-cancel}
+ \mu_N-h\ge
+ \mu_C+G_a+\mu_M-L_o-E_{\mathrm{div}}
+       -\bigl(S_{\mathrm{div}}-A\log T+E_e\bigr).
+\end{equation}
+共同项 $F_o$ 在同一行、同一词上消去，之后才取平均。这个顺序也解释了前面为何要求同一方案同时满足两类估计。
+
+接下来，计数估计给 $\log T\ge L$，分层的局部误差给 $E_e\le m(A\ell+c_E B_0)$。此处 $L$ 是归档 \texttt{Lam5} 的行下界，$\ell$ 对应 \texttt{lg}。利用 $A\ge0$，括号有上界
+\[
+ S_{\mathrm{div}}-A\log T+E_e
+ \le S_{\mathrm{div}}-AL+mA\ell+mc_E B_0 .
+\]
+归档把右边前三项重写成
+\begin{equation}\label{eq:slope-main-identity}
+ S_{\mathrm{div}}-AL+mA\ell
+ =\mathrm{Main}+A c_{\mathrm{Count}}\bigl(\mathcal L+m^2\mathcal L/k\bigr),
+\end{equation}
+其中 $\mathcal L$ 是计数误差尺度。这个恒等式可直接核算。令 $v>0$ 为宿主归一化参数，$f$ 为正整数，$w_{j\rho}>0$ 为对应权，则
+\[
+ L=\sum_{j=1}^m\frac1f\sum_{\rho=1}^f\log(w_{j\rho}v/\pi)
+       +m\ell-c_{\mathrm{Count}}(\mathcal L+m^2\mathcal L/k).
+\]
+代入 $S_{\mathrm{div}}=m\sum_t a_t(\log a_t-1-\gamma-\log(\pi/v)+(L'/L)(1))$，其中 $a_t\log a_t$ 在零处取连续值，展开对数便有
+\[
+ \mathrm{Main}
+ =\sum_{j,t}a_t\left(\log a_t-1-\gamma+(L'/L)(1)
+                  -\frac1f\sum_{\rho=1}^f\log w_{j\rho}\right).
+\]
+这里 $(L'/L)(1)$ 指归档所在宿主的对数导数参数，与行下界 $L$ 是两个量。在等式 \eqref{eq:slope-main-identity} 中，$mA\ell$ 和来自 $v/\pi$ 的常数都消去。见
+\src{Formalism/RankGapBounds/MeanBoundSecondForm}{107}{\texttt{Main} 的定义}、
+\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/LevelOfCongruence}{105}{\texttt{key\_identity5}}。
+
+令 $s$ 为同一行内 $\mu_N-h$ 的按秩加权平均。式 \eqref{eq:slope-cancel} 给出 $s$ 的下界，含有 $G_a-\mathrm{Main}$。另一方面，归档用秩与斜率比较约束 $s-\mu_C$。上界还依赖最大斜率与平均斜率的差、覆盖参数和高度预算。把这项上界放回去，才得到 $G_a\le\mathrm{Main}+\text{误差}$。式 \eqref{eq:slope-cancel} 本身只提供其中一侧。源码中两个接口分别是
+\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/LevelOfCongruence}{50}{\texttt{s\_lower5}}
+和
+\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/LevelOfCongruence}{113}{\texttt{Ga\_bound5}}。
+
+\subsubsection{整体斜率上界从何而来}
+仍固定一行，令 $I$ 为词的集合。记 $\mu_C$、$\mu_C^-$ 分别为目标格按归档约定归一化后的平均和最小斜率。取参数 $D_H>0$ 使 $s-\mu_C^-\le D_H$，令
+\[
+ U=\max_{i\in I}(\mu_{\max}(N_i)-h_i)-s .
+\]
+由于平均值不超过最大值，$U\ge0$。在归档的满秩格、映像包含、高度、源均值和最大斜率条件，以及矩阵匹配和两项矩阵误差条件下，有
+\begin{equation}\label{eq:rank-entropy}
+ s-\mu_C\le \log |I|+
+ \frac{4U\log(1+D_H/U)+(\eta+4\sqrt e)D_H}{1-\delta},
+ \qquad 0\le\delta<1,\quad \eta\ge0,\quad 0\le e\le\tfrac14 .
+\end{equation}
+这里 $\delta$ 是格比较的一项覆盖误差，$\eta,e$ 分别来自矩阵族的迹比与偏差条件。这条界在数据层记作
+\src{Formalism/RankGapBounds/MeanBoundSecondForm}{151}{\texttt{SlopeIneq}}。
+它用源格的按秩平均、最大斜率余量和矩阵条件给出目标平均斜率下界。只看行列式或总秩无法得到这条界，仍需控制多个像空间是否集中在少数共同方向。
+
+归档从完整空间到保留空间的矩阵压缩取得这类控制。记第 $i$ 块在压缩前后的维数为 $r_i^{\rm full},r_i$。实际家族的逐块比较给出 $\frac34r_i^{\rm full}\le r_i\le r_i^{\rm full}$，所以
+\[
+ d_{\rm loss}=1-\frac{\sum_i r_i}{\sum_i r_i^{\rm full}}\in[0,1/4].
+\]
+若 $Q_i$ 是压缩用的等距嵌入，$B_i^{\rm full}$ 是原矩阵，则保留矩阵为 $B_i^{\rm full}Q_i$。从完整矩阵的迹平方和对角偏差估计，归档分别推出压缩后的两类界。所用的 $\eta$ 为 $5\sigma+3\sqrt{d_{\rm loss}}$，所用的 $e$ 为 $2e_0$，其中 $\sigma,e_0$ 为完整族给定的误差参数。随后把两个矩阵界送入比较目标格的定理，得到 \eqref{eq:rank-entropy}。三步可对照
+\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/ChainLatticeSizesModelEventually}{279}{家族的秩条件}、
+\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/JointDModelAppliesUnitLattice}{164}{矩阵压缩}
+及同文件的 \src{Formalism/SizeWindowBrackets/ChainSlopeWindows/JointDModelAppliesUnitLattice}{215}{整体不等式}。秩比例和完整矩阵的两类估计都在上游输入里。
+
+\paragraph{用阈值分层证明斜率比较。}
+把每个源格的斜率按其出现的秩重复，减去对应映射高度 $h_i$，得到一列 $x_j$。它的平均为 $s$，各项至多为 $s+U$。因此对每个 $\tau\ge0$，低于 $s-\tau$ 的项所占的比例至多为 $U/(U+\tau)$。具体地，所有 $(s+U)-x_j$ 非负，平均为 $U$；低于阈值的每一项贡献至少 $U+\tau$。若 $U=0$，全部 $x_j=s$，比例为零。保留各格中斜率达到阈值的部分，再映入目标格。高度界保证这些像落在目标格斜率至少为 $s-\tau$ 的部分。证明这一点时应用的是单个映射的最小斜率比较，按各个无穷处算子范数的对数平均来归一化。
+
+即使各源格损失的秩比例只有 $U/(U+\tau)$，各像也可能互相重叠。迹比可以检测这种集中。作为原型，取像的加权矩阵和 $P=\sum_i \gamma_i^{-1}B_i B_i^*$，$\gamma_i>0$。若 $P\ne0$，对它的非零特征值应用 Cauchy--Schwarz 不等式，得到
+\[
+ \operatorname{rank}P\ge
+ \frac{(\operatorname{tr}P)^2}{\operatorname{tr}(P^2)}.
+\]
+例如同样有总迹 $2$，矩阵 $\operatorname{diag}(1,1)$ 的比值为 $2$，$\operatorname{diag}(2,0)$ 的比值为 $1$。实际证明在删去低斜率方向后，还须控制各块偏离等距的程度。对保留后的矩阵族使用迹比和对角偏差界，可把目标格中低于阈值的秩比例压到
+\[
+ w(\tau)=\frac{\eta+4U/(U+\tau)+4\sqrt e}{1-\delta}.
+\]
+这正是 \texttt{thmF\_place} 与 \texttt{theoremFSharp\_of} 相接的一步。最后，设目标格斜率列表为 $z_1,\ldots,z_D$，每项至少是 $s-D_H$。每个正亏损 $(s-z_j)_+$ 都等于相应的阈值区间长度，故
+\[
+ s-\mu_C
+ \le \frac1D\sum_{j=1}^D(s-z_j)_+
+ =\int_0^{D_H}\frac{\#\{j:z_j<s-\tau\}}{D}\,d\tau
+ \le \int_0^{D_H} w(\tau)\,d\tau.
+\]
+积分给出式 \eqref{eq:rank-entropy} 中的分式部分。归档采用的版本在这一界上再加非负的 $\log|I|$。这一步也可以独立移用：若已知一个有限数据列低于每个阈值的比例，就可通过各段长度乘比例直接估计平均亏损。证明和转接见
+\src{Formalism/HarderNarasimhan/HarderNarasimhanProofs/TheoremFSharp}{272}{斜率阈值、秩亏损与积分}，
+\src{Formalism/HarderNarasimhan/HarderNarasimhanProofs/TheoremFSharp}{388}{带对数项的版本}及
+\src{Formalism/CorankShare/CorankShareProofs/LayerCakeFormula}{57}{阈值分层恒等式}。
+
+最后，若 $0<D_H\le X_0b$ 且 $0\le U\le U_0$，其中 $X_0,b>0$，对数项满足
+\[
+ U\log(1+D_H/U)\le (U_0+b)\log(1+X_0).
+\]
+左侧在 $U=0$ 取连续延拓值 $0$。当 $U>0$ 时，由 $\log t\le t-1$ 应用于 $t=(1+D_H/U)/(1+X_0)$，有
+\[
+ U\log(1+D_H/U)
+ \le U\log(1+X_0)+\frac{D_H-U X_0}{1+X_0}
+ \le U_0\log(1+X_0)+\frac{X_0 b}{1+X_0}.
+\]
+再用 $X_0/(1+X_0)\le\log(1+X_0)$。这解释了即使 $U$ 很小，归一化的误差里也只多出对数因子。见
+\src{Formalism/RankGapBounds/RankGapProofs/WeightedMeanData}{81}{\texttt{phi\_bound}}。
+现在把上下界写在同一个式子里。记 $\overline L$ 为各词的剩余斜率损失 $L_o$ 的秩加权平均，并令
+\[
+ K=A c_{\rm Count}(\mathcal L+m^2\mathcal L/k)
+       +E_{\rm div}+mc_E B_0+R_M,\qquad
+ R_M=c_{\rm Slope} n_T a\mathcal L(1+m/k).
+\]
+这里 $a$ 是模型的高度参数，$n_T$ 是行数。源格的平均斜率满足 $\mu_M\ge -R_M$，见
+\src{Formalism/RankGapBounds/MeanBoundSecondForm}{139}{源格斜率条件}。由 \eqref{eq:slope-cancel} 和 \eqref{eq:slope-main-identity} 得
+\[
+ G_a-\mathrm{Main}\le(s-\mu_C)+\overline L+K.
+\]
+在归档的记号中，$K$ 是 \texttt{K0v5}，最后一项均值是 \texttt{wmean} 对 \texttt{Lo5} 的取值。式 \eqref{eq:rank-entropy} 控制右侧第一项。设 $D_H\le X_0b$，$U\le U_0$，则代入上面的对数界，得到
+\[
+ G_a\le\mathrm{Main}+K+\overline L+\log|I|
+ +\frac{4(U_0+b)\log(1+X_0)+(\eta+4\sqrt e)X_0b}{1-\delta}.
+\]
+为看清 $U_0$ 的来源，取一词 $i$ 的最大斜率减高度，再减另一词 $j$ 的平均斜率减高度。两条源格到调整格的界给出
+\begin{align*}
+ &(\mu_{\max}(N_i)-h_i)-(\mu(N_j)-h_j)\\
+ &\qquad\le\mu_{\max}(M_i)-\mu(M_j)
+       +(-E_{e,i}-h_i)-(-E_{e,j}-h_j)
+       +c_{\rm Sl1}mB_0+L_{o,j}.
+\end{align*}
+第一项由源格的最大斜率上界和平均斜率下界控制。第二组括号的差可用
+\[
+ V_{\rm var}=2mc_EB_0+c_H(n_T a\mathcal L+mB_0)
+                    +A c_{\rm Count}\log k
+\]
+从上控制。两词的 $E_e$ 都以同一个 $mA\ell$ 为中心，取差时中心项消去，剩下第一项。后两项来自 $h+A\log T$ 在两词间的差及 $|\log T_i-\log T_j|\le c_{\rm Count}\log k$。令
+\[
+ K_3=c_{\rm Slope}n_T a\mathcal L(2+m/k)+V_{\rm var}+c_{\rm Sl1}mB_0 .
+\]
+先按 $j$ 加权取平均，再对 $i$ 取最大值，便有 $U\le K_3+\overline L$。于是可取 $U_0=K_3+\overline L$ 和 $X_0=x^{c_{HH}}$。归档随后用对各行统一的 $\bar\delta,\bar\eta,\bar e$ 从上控制 $\delta,\eta,e$。这就得到 \texttt{Ga\_bound5}，见
+\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/LevelOfCongruence}{82}{最大斜率余量}及
+\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/LevelOfCongruence}{113}{逐行主项界}。
+
+局部收益的模型项含
+$\Lambda(n)(1-\chi_{-d}(n))(a/n-w_n)_+$。第 \ref{sec:prime-signal} 节用同一平滑核解释如何识别这一项。
+
+这里引用的几何结果包括局部 theta 积分的匹配、测试向量的选取和余体积界。下列量词说明为何它们能同时进入估计。按归档
+\src{Development/AutomorphicArithmetic/CharacterBoxes/DesWin}{11}{topDesWin}
+的记法，一族 $F$ 在每个窗口尺度记录宿主与行数据，$D$ 为该族共同选取的数据（源码中写作 $CH$）。几何证明给两种输入。
+\begin{enumerate}[label=(\alph*)]
+\item 各个闭性质有可合并的阈值。合并后得到 $\e_1>0$；对每个充分小的固定 $\e$ 可选一个公共大小要求 $K$，使合格且达到 $K$ 的每组 $(F,D)$ 同时具备整除的条件式、秩与斜率估计、归一化及整体格比较所需的条件。
+\item 设计存在定理给出 $\e_3>0$；对每个 $0<\e<\e_3$ 及\textbf{任给}的 $K$，存在同一组 $(F,D)$ 达到 $K$，并满足宿主类及两个大小条件。该宿主类另有上同调预算。
+\end{enumerate}
+取 $\e_*=\min(\e_1,\e_3)$，固定 $0<\e<\e_*$，由 (a) 取 $K$ 后才调用 (b)。行空间与核给出带前提的整除命题；上同调预算、局部指数数据和秩关系共同验证其前提。把所得整除与秩、范数界用于 (a) 的整体格比较，得到该族在所有足够大窗口尺度上均可用的逐级矩阵比较。阈值可以依赖所选族，在应用到不同的窗口点时保持固定。若 (b) 只对某个预先选好的 $K$ 有效，这一步就无法完成。
+
+\paragraph{Galois 表示提供什么数据。}
+归档在所有 CM 数域 $E$ 上使用下述存在定理。固定代数闭包 $\overline E$、素数 $\ell$、域同构 $\iota:\overline{\mathbb Q}_\ell\simeq\C$ 和整数 $n\ge1$。对 $\mathrm{GL}_n$ 上正则代数且带有所需极化的尖点自守表示 $\pi$，存在连续半单表示
+\[
+ r:\operatorname{Gal}(\overline E/E)\longrightarrow
+                         \mathrm{GL}_n(\overline{\mathbb Q}_\ell).
+\]
+同一定理给出每个嵌入 $\tau:E\hookrightarrow\overline{\mathbb Q}_\ell$ 的权列表。若无穷处无穷小特征的列表写为 $(z_i)_i$，则相应 Hodge--Tate 权为 $((n-1)/2-z_i)_i$，在共轭嵌入处按 $h\mapsto w-h$ 变换，其中 $w$ 是该定理给出的整数权。
+
+有限素位上，比较使用 Weil--Deligne 数据，也就是由局部表示读出的 Frobenius、惯性与幂零算子信息。在 $\ell$ 以外的素位，归档给出比较两侧的维数相同。若自守侧的 Weil 数据在交换子上平凡且幂零算子为零，则给出两侧数据相等。另一条适用条件是该处完备化同构于 $\mathbb Q_p$，有 $n=1$ 或 $p>16n^2$，同时自守侧满足归档的驯分歧、重根限制和幂零算子为零的条件。这时得到惯性元素的特征多项式相等，Galois 侧的幂零算子也为零。在 $\ell$ 上方，先给定局部比较数据及其相容性。在此条件下，球面局部分量给出晶体性、de Rham 性和相应权。满足归档所列驯分歧或交换子条件并且自守侧幂零算子为零时，还得到潜在半稳定性、权和相应的 Weil--Deligne 比较。精确的比较对象和适用条件见
+\src{Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/TypeConditions/WeightsConjBis}{25}{局部比较范围}、
+\src{Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/TypeConditions/WeightsConjAlt}{27}{交换子与重根条件}、
+\src{Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/TypeConditions/WeightsConjBis}{55}{权与局部性质}及
+\src{Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/TypeConditions/WeightsConjBis}{69}{存在定理的完整量词}。
+
+归档用几何实现和合格的 theta 提升构造这条存在定理。归档中的 theta 输入先固定源空间，在满足指定权和特征限制时，把自守数据送到足够大维数的目标酉群。构造还用到模 $\ell$ 同余，并转回上述局部比较。参见
+\src{Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/ThetaParseval/HalfIndexLattices/TLiftK}{12}{几何构造所用的 theta 输入}
+和 \src{Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/IntegralStructures/Development}{20}{存在定理的构造接口}。
+这里的提升用于构造 Galois 表示，前文按素数和尺度选择的 $m$ 步链用于积累周期的整除性。
+
+为便于核对，实际主定理先用同一 Galois 表示结果分别供给几何和上同调两支
+（\src{Development/AutomorphicArithmetic/CharacterBoxes/MainConclusion}{7}{MainConclusion}）。
+几何支经 \src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/EveryCharacterOfLiteratureOfVWin}{810}{积分匹配的入口}、
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/SiegelEisensteinSecondTermHypotheses}{69}{局部匹配定理}
+与 \src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/TopPlug}{12}{TopPlug}，调用
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/TopShape}{47}{TopShape} 中的条件整除、任意 $K$ 的设计存在及上述同族选取。上同调支把同一存在定理分别包装进只有一个字段的 \texttt{OpenImageCondition}，并作为自守构造需要的局部比较输入直接传入，再同基变换结果合用以得到式 \eqref{eq:length}。归档以其构造宿主，并在所选族上验证整除前提。参见
+\src{Development/AutomorphicArithmetic/AutomorphicVarieties/ModularityArgument/ThresholdArguments/DenseThresholdCases/VwinOfRow}{4}{同一存在定理的两次使用}。本文在这些上游几何及上同调定理处使用 \cite{archive} 的结论。
+
+\subsection{从格比较到实值素数和}\label{sec:prime-signal}
+在格比较之后，归档的模型量可逐项写成素数幂和。给定一层、一行，把其正权写成 $w_{p^i}$。在二次特征 $\chi_{-d}$ 不分歧的素数处，若 $\chi_{-d}(p)=1$，则所有幂的系数 $1-\chi_{-d}(p)^i$ 都为零。若 $\chi_{-d}(p)=-1$，则奇次幂的系数恰为 $2$，偶次幂为零。分歧素数 $d$ 有 $\chi_{-d}(d)=0$，所有正次幂的系数为 $1$，它在归档中另用相应的权索引。逐项使用
+\[
+ \log p\,\bigl(a/p^i-w_{p^i}\bigr)_+
+   =\Lambda(p^i)w_{p^i}r\bigl(a/(p^i w_{p^i})\bigr)
+\]
+得到所需平滑核。左侧是局部整除预算导向的模型项，右侧才是可用 Mellin 变换求中心化主项的素数幂项。归档的定义见
+\src{Formalism/SharpRestriction/GlobalSchurBounds/ZetaZeroFreeRegion}{51}{\texttt{askP}、\texttt{askD} 和 \texttt{ASKjt}}。
+局部整除计算中，收益和模型项是两个量。收益包含坏位剔除、每处上限等信息。对于模型项，\texttt{ask\_at} 在满足填充条件时把局部的 \texttt{askP} 识别为有限奇次幂和，\texttt{pb\_primes} 将求和范围转成不大于行高的惯性素数，在外层逐素数乘 $2\log p$。因此一处素数的同一个 $\log p$ 权用于该处各奇次幂，恰好是上式的 $\Lambda(p^i)$。见
+\src{Formalism/LocalToGlobal/GlobalTheory/PowFourLtCeilThresholdPrime}{298}{\texttt{ask\_at}}
+和 \src{Formalism/LocalToGlobal/GlobalTheory/PowFourLtCeilThresholdPrime}{334}{\texttt{pb\_primes}}。
+从实际的整除收益到这个模型，须计入被剔除的素位及局部损失。下面使用的是已经扣除误差后的整体比较。
+
+设 $A$ 为宿主的有限阿贝尔群因子，$A_0$ 为目标循环商的核，$|A/A_0|=o$。在 $(\mathbb Z/2)^2\times A$ 的特征展开中，沿 $A_0$ 作平移平均。非平凡限制的特征之和为零；剩余的频率来自目标循环族及其三组二次扭曲。再用行集在各陪集内的相对份额逼近
+\[
+ p(c)=\frac{3+\mathbf1_{\{c=0\}}}{3o+1}.
+\]
+该有限群函数的 Fourier 系数在平凡特征处为 $1$，在每个非平凡特征处均为 $1/(3o+1)$；这是对所写函数作特征求和的结果。三组辅助扭曲按 \eqref{eq:aux} 单独计入误差。平凡分量也发生振荡，需和其余目标分量一起保留。此处系数计算是有限群恒等式；其在整体平均不等式中的使用见 \src{Development/AutomorphicArithmetic/DedekindLFunctions/LandauTheorems/ChCore}{343}{\texttt{ch\_core}}。
+
+记 $n=|A|$，$N_T$ 为行数，$N_2$ 为厚集大小，$\Delta=N_2/n$。厚集存在定理的参数条件是：$0<\e<1/52$；固定常数 $C_o,C_L$；框架 $\phi$ 的阶数满足 $x^{h_E(\e)}/2\le\operatorname{ord}(\phi)\le C_o x^{h_E(\e)}$ 且 $o(\phi)\le C_o$；长度参数 $L_w$ 满足 $2\le L_w\le C_L\log x$。在这些条件下，对充分大的 $x$ 存在 $T_2$，满足短关系排除条件 \texttt{NoRel}、$|T_2|\ge x^{-\e}\operatorname{ord}(\phi)$ 及 $4L_w|T_2|\le\phi.n_0$，见 \src{Development/AutomorphicArithmetic/ThickFrames/ThickFrame2Large}{29}{厚集存在定理}。宿主构造把 \texttt{ThickSetLowerBound} 等性质装入族数据，见 \src{Development/AutomorphicArithmetic/CharacterBoxes/DesignS}{38}{厚集条件}及 \src{Development/AutomorphicArithmetic/CharacterBoxes/DesignS}{47}{族构造}。这里 $h_E$ 是定理中的指数函数，$L_w$ 是其长度参数，$o(\phi),\operatorname{ord}(\phi),\phi.n_0$ 分别是框架的 $o$、轨道阶和底层整数参数。用于下式的密度条件则是 $\Delta\ge x^{-\e}$。归档先用 \src{Formalism/SharpRestriction/GlobalSchurBounds/QuadraticLogDerivCongr}{1731}{\texttt{winN'}} 从宿主的厚集下界导出该密度，再用\src{Formalism/SharpRestriction/GlobalSchurBounds/QuadraticLogDerivCongr}{1102}{模型基数等式}把它传进 \src{Formalism/SizeWindowBrackets/SChain}{53}{\texttt{RestSize}}。
+令 $a$ 为行高度，$b>0$ 为公共尺度，$|a/b-x|\le1$。厚集上的权满足 $b\le w\le b+\eta+1$，带权表达式 $w g_\chi(a/w)$ 可移到 $b g_\chi(a/b)$，误差至多 $3(x+1)(\eta+1)$。薄集仅有 $0<w\le2b'$，此时 $a/w\ge X'/3$。在这个不同尺度上用 $|g_\chi(v)|\le v\vartheta$，得到 $w|g_\chi(a/w)|\le(x+1)b\vartheta$。$\eta$ 控制厚集的权偏移，$\vartheta$ 来自薄尺度增长界。归档给出的参数使两类误差经角色求和后合计至多每行每步 $2b/x$，见 \src{Development/AutomorphicArithmetic/DedekindLFunctions/LandauTheorems/ChCore}{75}{厚薄比较}。
+
+写 $Q=N_Tmb$。记 $\Psi_A(A_0)$ 为第一次平均后留下的频率集，$K_p$ 为其中保留的目标频率。写 $g_\omega$ 表示频率 $\omega$ 对应的中心化函数，则 $\Sigma=\sum_{\omega\in\Psi_A(A_0)\setminus K_p}|g_\omega(x)|$ 是该差集上全部频率的范数和。令 $\mathcal E$ 为各行格比较所给误差的总预算。平移平均产生密度 $\Delta$，二次子群归一化产生因子 $1/2$。归档的平均比较给出
+\begin{equation}
+ \frac{Q\Delta}{2}\bigl(H(x)-\Sigma-4x^{1/2+\e}\bigr)
+    \le \mathcal E+2Q/x . \label{eq:gap}
+\end{equation}
+为说明平方根的来源，记 $a_E$ 为归一化前误差使用的高度参数，$k$ 为离散尺度。$\mathcal E/Q$ 的大小估计包含放大因子 $x^{C\e}$；与它相乘的括号为
+\[
+ \frac{a_E}{mb}+\frac{a_E m}{bk}
+   +\frac{2nmx^\e}{N_T}+\frac{N_2 k x^{2\e}}{n^2N_T}.
+\]
+利用 $a_E\le2xb,\ xm\le k\le n^2x^{1/2-\e},\ N_T\ge nx^{-\e/8}/2$，这四项依次至多
+\[
+ 2x/m,\qquad 2,\qquad 4mx^{9\e/8},\qquad 2\Delta x^{1/2+9\e/8}.
+\]
+$x/m$ 与 $m$ 的平衡要求 $m$ 接近 $\sqrt x$；归档取 $x^{1/2-\e}\le m\le x^{1/2+\e/2}$。例如第三项除以 $\Delta$ 后至多 $4x^{1/2+21\e/8}$，与 $3\e$ 尚有 $3\e/8$ 的余量；归档把阈值取到 $x^{3\e/8}\ge26$ 来吸收固定常数。这解释了为什么所用厚集可以稀疏到密度 $x^{-\e}$。完整代入 \eqref{eq:gap} 的归一化结果为
+\[
+ H(x)\le x^{1/2+(C+3)\e}+\Sigma,\qquad
+ \Sigma\le4o\,x^{1/2+\e},
+\]
+见 \src{Development/AutomorphicArithmetic/DedekindLFunctions/LandauTheorems/ChCore}{343}{ch\_core}
+与 \src{Development/AutomorphicArithmetic/PrimitiveCosets/CoreGm}{12}{core\_gm}。装配取 $e_D=2,e_L=0$，令 $C=e_D+e_L+3=5$。因 $o$ 固定，充分大的 $x$ 满足 $1+4o\le x^\e$，故
+\begin{equation}
+                  H(x)\le x^{1/2+9\e}. \label{eq:final}
+\end{equation}
+
+\paragraph{从上游结果取得同一族。}
+最终装配定理 \src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/TopPlug}{12}{临界线右侧的无零性} 同时需要 \texttt{VWin}、\texttt{GLq.Green} 和带有 \texttt{LinkN} 条件的闭族数据。第一项来自第 6.2 节的长度窗口。第二项把有限域上的正则特征与表示的对应转成所需的行和层结构，见 \src{Development/AbelianVarietyTheory/Proofs/InertiaEigenvalues/SumRangeEqRoots}{225}{\texttt{green\_of\_regular}}。第三项给出一个在族内统一的界，把提升各处的局部指数加权和控制在上同调长度和几何尺寸所给的预算之内。归档先合并二、三处的局部行估计，再结合 \texttt{nLink} 等上游结果证明闭族包含所需的 \texttt{LinkN} 数据。见 \src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/At23OfAll}{24}{局部行估计}与
+\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/SiegelEisensteinSecondTermHypotheses}{69}{具有局部匹配条件的装配}。这里陈述的是在这些上游结果下的装配。归档的无条件结论还使用自守表示和 Galois 表示的比较：\src{Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/IntegralStructures/RowSrc}{6}{由 theta 提升构造相容的 Galois 表示}，再经\src{Development/AutomorphicArithmetic/AutomorphicVarieties/ModularityArgument/ThresholdArguments/DenseThresholdCases/VwinOfRow}{4}{由相容数据得到长度窗口}供给第一项。其余输入随\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/EveryCharacterOfLiteratureOfVWin}{810}{自守结果的证明链}进入\src{Development/AutomorphicArithmetic/CharacterBoxes/MainConclusion}{7}{最终定理}。这些上游结果在本文按归档的定理引用。
+
+\paragraph{合并量词。}
+先固定 $\psi$ 及 $\theta\in(1/2,1)$，再选满足 $1/2+9\e\le\theta$ 且落在所有上游定理容许范围内的 $\e>0$。取窗指数 $\lambda=3/2$。同族选取给出 $F$。按\src{Development/AutomorphicArithmetic/CharacterBoxes/Supply}{22}{宿主类的定义}，对每个起点下界 $y$，$F$ 的尺度集合含某个 $Y\ge y$ 对应的整个窗 $[Y,Y^\lambda]$。在同一族内，超过统一阈值后，每个 $x$ 上的每个族索引 $i$ 都满足宿主条件。\src{Development/AutomorphicArithmetic/CharacterBoxes/DivinNOfHypV}{117}{\texttt{divinN\_of\_hypV}} 另以 \texttt{HypV}、\texttt{LinkN} 和 \texttt{SmallLevelRankEq} 为前提，给出统一阈值后的 \texttt{DIVinN} 数值界（定义见 \src{Formalism/SharpRestriction/GlobalTheoremInputs}{45}{\texttt{LinkN}}、\src{Formalism/SharpRestriction/GlobalTheoremInputs}{52}{\texttt{SmallLevelRankEq}}、\src{Formalism/SharpRestriction/GlobalTheoremInputs}{62}{\texttt{DIVinN}}）；逐级矩阵比较的装配则见 \src{Development/AutomorphicArithmetic/CharacterBoxes/ZeroFreeAllOfTopG}{26}{\texttt{zeroFreeAll\_of\_topG}}。因此，对给定 $B$ 可把窗口起点选在 $B$、各统一阈值及逐点估计阈值之后，得到同一个完整窗口 $[Z,Z^{3/2}]$。所选族及阈值可依赖 $\psi,\theta$。逐点使用\src{Development/AutomorphicArithmetic/PrimitiveCosets/LevelGmLeOnFamilyScales}{28}{族上的比较}，得到整窗上的式 \eqref{eq:final}。目标族的权全为正，并含有模一特征。定理 \ref{th:main} 因而把这个整窗上界转成该族零点的临界线结论，特别得到 $\zeta$ 的结论。非本原特征与本原代表相差有限个因子 $1-\chi^*(p)p^{-s}$，其在 $\re s>0$ 内不为零。
+
+\section{可以独立使用的推导}\label{sec:transfer}
+
+\paragraph{在有限个受限区间之间取得整窗。}
+第 \ref{sec:ar} 节的选窗论证适用于这样的估计：有至多 $R$ 个异常指标 $h$，每个只在 $t^\eta<h\le t^C$ 时妨碍估计，且 $0<\eta\le C$。在对数轴上移除相应的禁区，便能在任意充分高的截止点 $X$ 以下得到整段 $[Y,Y^2]$，且 $Y\ge X^{1/[2(2C/\eta)^R]}$。例如令 $\eta=1$、$C=2$、$h=2^{20}$、$X=2^{32}$，禁止的 $\log_2 t$ 落在 $[10,20)$。递归把对数轴的上端从 $32$ 降至 $8$，可用 $[4,8]$，即 $[16,256]$。若另一估计只在有限个已知尺度带失效，可以先把这些尺度带写成同样的禁区，再用此法同时取得一个连续适用区间。此法要求所有禁区的数目和端点比有统一上界。
+
+\paragraph{清除同一对象的分母。}
+设 $M$ 是整数格，$y$ 属于它张成的有理空间。若 $d_1y,d_2y\in M$，则 $\gcd(d_1,d_2)y\in M$。证明只需找整数 $r,s$ 使 $rd_1+sd_2=\gcd(d_1,d_2)$，再在格中作线性组合。例如 $42y,70y\in M$ 时，$2(42y)-70y=14y\in M$。这一推导可用于有理矩阵、线性投影、有限精度计算的整性证书。若两次构造产生 $y_1,y_2$，必须先给出同一目标的识别。例如 $y_1=1/2,\ y_2=1/3$ 分别由 $2,3$ 清分母，不能据此得到任何一个是整数。归档的 seesaw 和格的拼接正是处理同一性与整性这两个条件的工作。
+
+\paragraph{分块乘积的系数界。}
+例如取 $p=3$，两块级数取 $3x+9x^2$ 和 $9y+27y^2$，整系数余项取 $1+xy$。乘积的 $x^2y^2$ 系数是 $243+27=270$，其三进估值为 $3$，恰为两块共同下界 $1+2$。若余项改成 $1+xy/3$，该系数为 $252$，估值降至 $2$。这个原型可用于合并由不同变量表示的局部生成函数。应用时应检查余项在所选坐标中仍有整系数，并核对实际取系数的算子能分块处理。
+
+\paragraph{计算复合映射的局部整除。}
+给定有理矩阵 $A,B$ 和素数 $p$，若逐项有 $v_p(A_{ik})\ge a_{ik}$、$v_p(B_{kj})\ge b_{kj}$，则
+\[
+ v_p((AB)_{ij})\ge\min_k(a_{ik}+b_{kj}).
+\]
+每项乘积的指数相加，再对和使用最低指数，即得此式。它适用于任何有限矩阵链。若要利用不同乘积之间的相消，须核对一个更精确的余数。例如 $A=(1,1)$，$B=(1,\,p-1)^\top$，逐项给出的下界为 $0$，而 $AB=p$ 的指数是 $1$。由下界表本身看不出相消。对本文的算术主链，还须证明随着尺度增大能够同时构造所有这些局部映射，并控制目标的大小。
+
+\paragraph{把局部整除和整体大小放进同一不等式。}
+设非零整数 $y$ 满足 $|y|\le B$，对若干不同素数 $p$ 有 $p^{a_p}\mid y$，其中 $a_p\ge0$ 为整数。各素数幂互素，所以 $\prod_p p^{a_p}\mid y$，于是
+\[
+                 \sum_p a_p\log p\le\log B .
+\]
+例如同时被 $4$ 和 $9$ 整除的非零整数，绝对值至少为 $36$。这个判断可用于整数行列式，也可用于清除分母后的有理量。无论局部条件怎样取得，都须核对它们约束同一个 $y$，而且整体上界也用同一归一化。第 \ref{sec:ar} 节的斜率比较是在更复杂的行格上实施同类比较。
+
+\paragraph{迁移单边窗口判据。}
+第 \ref{sec:mellin} 至 \ref{sec:integer} 节的论证可以用来处理其他实值加权和。须核对它的变换在目标半平面内可亚纯延拓、实轴极点有正留数，以及待研究的零点确实在变换中留下极点。整数窗口还另需插值误差界。举例取模 $5$ 的四阶特征 $\chi$，由 $\chi(2)=\mathrm i$ 决定，给 $\chi,\bar\chi$ 各加权 $1/4$，保留平凡项权 $1$。归一化二阶差分的特征因子为 $1+\tfrac12\re\chi(n)\ge1/2$，可直接用剩余类表核对。若两个权都改为 $1$，这个因子在素数 $19\equiv4\bmod5$ 变为 $-1$，尽管 Mellin 留数仍按正权相加。点列的凸性和变换的留数符号分别由两个条件控制。可独立迁移的是从好窗到无极点的判据。无条件供应好窗还需要适用于该问题的估计。
+
+
+\section{结语}
+从一个给定零点出发，高阶导数的增长率限制它的波动能避开多长的区间；从一个给定好窗出发，单边上界恰好控制同一导数组合。两者的比较给出定理 \ref{th:main}，也说明单点抽样为何会漏掉信息。对本文的平滑核，整数之间的曲率完全由平凡分量决定，因而整数窗口已携带全部所需的信息。困难集中在无条件产生任意远的好窗。归档用两条不同的统一性解决这一点：先使同一对辅助素数适用于整窗，再使整除和高度估计适用于同一族；两者承担的量词不同。
+
+\paragraph{材料与写作说明。}
+本文使用 2026 年 11 月 20 日发布的归档，源码链接固定至公开镜像的同一版本。Lean 与 Mathlib 社区的联合核验公告报告了完整编译、用两套工具把主定理与 Mathlib 的标准黎曼猜想陈述比对，以及由 Lean 官方内核和多个独立检查器核验导出证明 \cite{leanverification}。Sutherland 的复验日志另外列出五个主定理的公理审计，仅见 Lean 的三项标准公理 \cite{suth}。本文引用的数学基础是这份经核验的形式证明。Clay 数学研究所在 2026 年 11 月 22 日的题目页仍列为未解决 \cite{clayrh}。本文使用 OpenAI Codex（协作昵称「知衡」）起草和修订正文、追踪 Lean 源码、核对公式与引文，并检查 LaTeX 排版。Codex 子智能体参与源码追踪与推导复核。通过 OpenCode 调用 DeepSeek 复核了整数插值与端点问题。各节已注明归档定理与本文推导的关系。
+
+\section*{主要源码入口}
+以下按正文中的用途列出关键声明。所有链接固定在文献 \cite{archive} 的同一提交，路径相对于归档的 \texttt{src} 目录。
+\begin{description}
+\item[] \textbf{局部交叉差的整除}\\
+\path{Formalism.}\allowbreak\path{MainNotions.}\allowbreak\path{ColumnSystems.}\allowbreak\path{Pf.}\allowbreak\path{key_minor_dvd}\\
+\path{Formalism/}\allowbreak\path{SharpRestriction/}\allowbreak\path{GrowthBounds/}\allowbreak\path{CoarseMultiplicity/}\allowbreak\path{KeyMinorDvd.lean}，\src{Formalism/SharpRestriction/GrowthBounds/CoarseMultiplicity/KeyMinorDvd}{132}{第 132 行}。
+\item[] \textbf{各块估值的合并}\\
+\path{Formalism.}\allowbreak\path{MainNotions.}\allowbreak\path{FormalGroupSystem.}\allowbreak\path{Pf.}\allowbreak\path{form_of_place}\\
+\path{Formalism/SharpRestriction/GrowthBounds/}\newline
+\path{MultisetValuation/RamifiedLatticeOfChainEstimates.lean}，\src{Formalism/SharpRestriction/GrowthBounds/MultisetValuation/RamifiedLatticeOfChainEstimates}{90}{第 90 行}。
+\item[] \textbf{奇次位移的正部和}\\
+\path{Formalism.}\allowbreak\path{InvariantFactorPaths.}\allowbreak\path{G7.}\allowbreak\path{excessGainBound}\\
+\path{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/}\newline
+\path{FrobeniusLiftNorms/ABArith.lean}，\src{Formalism/ThetaLogCoordinates/UniformThetaSubstitution/FrobeniusLiftNorms/ABArith}{193}{第 193 行}。
+\item[] \textbf{把列格估值传给周期}\\
+\path{Formalism.}\allowbreak\path{MainNotions.}\allowbreak\path{WeilJacquetShalikaLaw.}\allowbreak\path{period_ge}\\
+\path{Formalism/}\allowbreak\path{SharpRestriction/}\allowbreak\path{GrowthBounds/}\allowbreak\path{WeilJacquetShalikaLaw.lean}，\src{Formalism/SharpRestriction/GrowthBounds/WeilJacquetShalikaLaw}{419}{第 419 行}。
+\item[] \textbf{同一整体映射的整数值}\\
+\path{Formalism.}\allowbreak\path{DivisionValues.}\allowbreak\path{divisor_into_dual_lattice}\\
+\path{Formalism/}\allowbreak\path{QuotientMetricDivisors/}\allowbreak\path{HermitianTwistDivisors/}\allowbreak\path{DivIntoDual.lean}，\src{Formalism/QuotientMetricDivisors/HermitianTwistDivisors/DivIntoDual}{49}{第 49 行}。
+\item[] \textbf{逐层局部指数的统一界}\\
+\path{UpperTheory.}\allowbreak\path{Top.}\allowbreak\path{divinN_of_hypV}\\
+\path{Development/}\allowbreak\path{AutomorphicArithmetic/}\allowbreak\path{CharacterBoxes/}\allowbreak\path{DivinNOfHypV.lean}，\src{Development/AutomorphicArithmetic/CharacterBoxes/DivinNOfHypV}{117}{第 117 行}。
+\item[] \textbf{单行斜率比较}\\
+\path{Formalism.}\allowbreak\path{LFunctionChainParameters.}\allowbreak\path{WeightedSlopeBounds.}\allowbreak\path{Ga_bound5}\\
+\path{Formalism/}\allowbreak\path{SizeWindowBrackets/}\allowbreak\path{ChainSlopeWindows/}\allowbreak\path{LevelOfCongruence.lean}，\src{Formalism/SizeWindowBrackets/ChainSlopeWindows/LevelOfCongruence}{113}{第 113 行}。
+\item[] \textbf{得到共用幂次窗口}\\
+\path{UpperTheory.}\allowbreak\path{Top.}\allowbreak\path{winPairs}\\
+\path{Development/}\allowbreak\path{AutomorphicArithmetic/}\allowbreak\path{CharacterBoxes/}\allowbreak\path{WinPairs.lean}，\src{Development/AutomorphicArithmetic/CharacterBoxes/WinPairs}{5}{第 5 行}。
+\item[] \textbf{由窗口推出临界线右侧无零性}\\
+\path{UpperTheory.}\allowbreak\path{Top.}\allowbreak\path{zero_free_all_of_green_v_win}\\
+\path{Development/AutomorphicArithmetic/ThetaCorrespondence/}\newline
+\path{ThetaPairLifts/ThirdPlaceSeries/TopPlug.lean}，\src{Development/AutomorphicArithmetic/ThetaCorrespondence/ThetaPairLifts/ThirdPlaceSeries/TopPlug}{12}{第 12 行}。
+\end{description}
+
+\begingroup
+\small
+\begin{thebibliography}{99}
+\setlength{\itemsep}{1.5pt}
+\bibitem{al} Alpöge, L. Announcement concerning the Riemann hypothesis. November 20, 2026. \href{https://alpo.ge/remark.pdf}{Author's announcement}.
+\bibitem{archive} Alpöge, L., with Claude. Lean source archive accompanying the announcement of November 20, 2026. \href{https://github.com/leanprover-community/riemann-hypothesis/tree/23aebbb302010b292314d406aa97f7901d698634/src}{Versioned public mirror}. Source archive SHA-256: \texttt{9631b4f020199e58}\allowbreak\texttt{0ba86178cb56c6e9}\allowbreak\texttt{b09f690c2369a80d}\allowbreak\texttt{c4334aa93f49c7fc}.
+\bibitem{dav} Davenport, H. \emph{Multiplicative Number Theory}. 3rd ed., revised by H. L. Montgomery. Graduate Texts in Mathematics 74, Springer, New York, 2000. \href{https://link.springer.com/book/9780387950976}{Publisher's edition}.
+\bibitem{kp} Kaczorowski, J., Pintz, J. Oscillatory properties of arithmetical functions. II. \emph{Acta Math. Hungar.}, 1987, 49: 441--453. \href{https://personal.math.ubc.ca/~gerg/teaching/592-Fall2018/papers/1987.Kaczorowski_2.pdf}{Article}.
+\bibitem{pintz} Pintz, J. On the remainder term of the prime number formula II. On a theorem of Ingham. \emph{Acta Arith.}, 1980, 37: 209--220. \href{https://doi.org/10.4064/aa-37-1-209-220}{DOI}.
+\bibitem{riemann} Riemann, B. Ueber die Anzahl der Primzahlen unter einer gegebenen Grösse. \emph{Monatsberichte der Berliner Akademie}, 1859, 671--680. \href{https://www.claymath.org/collections/riemanns-1859-manuscript/}{Manuscript}.
+\bibitem{kudlarallis} Kudla, S. S., Rallis, S. On first occurrence in the local theta correspondence. In \emph{Automorphic Representations, L-Functions and Applications: Progress and Prospects}, De Gruyter, 2005, 273--308. \href{https://doi.org/10.1515/9783110892703.273}{DOI}.
+\bibitem{stepanov} Stepanov, S. A. On the number of points of a hyperelliptic curve over a finite prime field. \emph{Math. USSR-Izv.}, 1969, 3(5): 1103--1114. \href{https://doi.org/10.1070/IM1969v003n05ABEH000834}{DOI}.
+\bibitem{leanverification} Lean and Mathlib communities. Lean verification of the Riemann Hypothesis. \href{https://leanprover-community.github.io/blog/posts/riemann-hypothesis/}{Joint verification statement}.
+\bibitem{clayrh} Clay Mathematics Institute. Riemann Hypothesis. \href{https://www.claymath.org/millennium/riemann-hypothesis/}{Millennium Prize Problem page}, accessed November 22, 2026.
+\bibitem{suth} Sutherland, A. Verification files for the Lean proof of the Riemann hypothesis. Record updated November 21, 2026, 12:55 UTC. \href{https://math.mit.edu/~drew/grh/}{Checks and source digests}.
+\end{thebibliography}
+\endgroup
+
+\end{document}
